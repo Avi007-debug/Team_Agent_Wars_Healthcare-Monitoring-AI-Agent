@@ -1,3 +1,5 @@
+import re
+
 from retrieval.hybrid_retriever import no_knowledge_check, retrieve
 
 
@@ -13,6 +15,27 @@ FOLLOW_UP_HINTS = {
 	"and for",
 	"also",
 	"more",
+}
+
+DOMAIN_HINTS = {
+	"symptom",
+	"symptoms",
+	"disease",
+	"treatment",
+	"drug",
+	"side effect",
+	"side effects",
+	"warning",
+	"warnings",
+	"interaction",
+	"interactions",
+	"food",
+	"nutrition",
+	"diet",
+	"prevent",
+	"prevention",
+	"guideline",
+	"guidelines",
 }
 
 
@@ -42,10 +65,22 @@ def _looks_like_follow_up(query):
 	if not q:
 		return False
 
-	if len(q.split()) <= 5:
+	q_tokens = set(re.findall(r"\b[a-z0-9']+\b", q))
+
+	for hint in FOLLOW_UP_HINTS:
+		if " " in hint:
+			if hint in q:
+				return True
+		elif hint in q_tokens:
+			return True
+
+	if q in {"it", "its", "that", "those", "them", "this", "these"}:
 		return True
 
-	return any(hint in q for hint in FOLLOW_UP_HINTS)
+	if any(hint in q for hint in DOMAIN_HINTS):
+		return False
+
+	return len(q.split()) <= 3
 
 
 def _contextualize_query(query, conversation_memory):
@@ -84,7 +119,7 @@ def answer_query(query, conversation_memory=None):
 
 	docs = retrieve(augmented_query)
 
-	if not docs or no_knowledge_check(augmented_query, docs):
+	if not docs or no_knowledge_check(query, docs):
 		return "No relevant medical information found."
 
 	return format_response(docs)

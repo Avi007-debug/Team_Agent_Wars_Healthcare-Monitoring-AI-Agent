@@ -145,6 +145,9 @@ def detect_entity(query):
 		if name in q:
 			return name
 
+		if len(q) >= 6 and q in name:
+			return name
+
 	return None
 
 
@@ -161,16 +164,15 @@ def no_knowledge_check(query, docs):
 	for doc in docs:
 
 		text = doc["text"].lower()
+		name = doc.get("name", "").lower()
+		section = doc.get("section", "").lower().replace("_", " ")
+		doc_tokens = set(tokenize(f"{name} {section} {text}"))
+		overlap = query_words.intersection(doc_tokens)
 
-		for word in query_words:
-			if word in text:
-				match_count += 1
-				break
+		if len(overlap) >= 2:
+			match_count += 1
 
-	if match_count == 0:
-		return True
-
-	return False
+	return match_count == 0
 # ---------------------------------------------------
 
 
@@ -179,6 +181,12 @@ def no_knowledge_check(query, docs):
 # ---------------------------------------------------
 
 def retrieve(query, k=5):
+	domain_priority = {
+		"drug": 4,
+		"disease": 3,
+		"nutrition": 2,
+		"guideline": 1
+	}
 
 	query_lower = query.lower()
 
@@ -203,10 +211,20 @@ def retrieve(query, k=5):
 		for idx in indices:
 
 			doc = data[idx]
+			doc_type = doc.get("type", "").lower()
+
+			if domain and doc_type != domain:
+				continue
 
 			section = doc.get("section", "").lower()
 
 			score = 0
+
+			if domain and doc_type != domain:
+				score -= 10
+
+			if domain == "disease" and doc_type == "disease":
+				score += 8
 
 			if section_priority and section_priority in section:
 				score += 10
@@ -263,6 +281,10 @@ def retrieve(query, k=5):
 
 		doc_type = doc.get("type", "").lower()
 
+		if domain and doc_type != domain:
+			score = -10
+			continue
+
 		score = 0
 
 
@@ -292,10 +314,18 @@ def retrieve(query, k=5):
 		if section_priority and section_priority in section:
 			score += 6
 
+		# DOMAIN PRIORITY BOOST (fallback only)
+		if not domain and doc_type in domain_priority:
+			score += domain_priority[doc_type]
+
 
 		# domain boost
 		if domain and domain == doc_type:
-			score += 5
+			score += 15
+
+		# EXTRA BOOST FOR MATCHING DISEASE DOMAIN
+		if domain == "disease" and doc_type == "disease":
+			score += 8
 
 
 		# keyword in name boost

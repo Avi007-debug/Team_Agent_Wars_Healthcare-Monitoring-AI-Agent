@@ -1,133 +1,118 @@
-# AI-Powered Healthcare Monitoring Agent using RAG and Multi-Tool Agentic Workflow
+# Team Agent Wars - Healthcare Monitoring AI Agent
 
-A production-oriented agentic system combining retrieval-augmented generation (RAG), specialized health tools, and multi-step agent workflows to provide contextual, explainable, and actionable health guidance. Built to support monitoring, triage, and patient-facing assistance with engineering-grade architecture suitable for iterative development and deployment.
+A practical healthcare assistant built with Hybrid RAG (FAISS + BM25), cross-encoder reranking, and lightweight medical tools (drug interaction, reminder, risk checks).
 
-## Project Overview
-- **Motivation:** Provide proactive, context-aware healthcare assistance that integrates clinical knowledge retrieval, tool execution, and predictive models.
-- **Problem statement:** Traditional health-tracking apps collect metrics but rarely combine up-to-date clinical guidance, drug-interaction checks, and predictive risk scoring in a single agentic loop.
-- **Differentiator:** The system uses agentic orchestration plus RAG to dynamically select tools, ground responses in evidence, and generate traceable outputs—minimizing hallucinations and improving clinical relevance versus single-step LLM replies.
+## Repository Links
 
-## Key Features
+- GitHub: https://github.com/Avi007-debug/Team_Agent_Wars_Healthcare-Monitoring-AI-Agent
+- Backup/older complete RAG zip (datasets + final vector assets source): https://drive.google.com/file/d/1m-fUhmBdns8lD3BhdRqYpaclD7OXiSx/view?usp=sharing
 
-### Track A (Core Agent Features)
-- Conversational triage and intent detection
-- Medication reminders (schedule/manage)
-- Drug-interaction checking with citations
-- Lightweight ML-based risk scoring
-- Health report generation (PDF/HTML)
-- Local persistence and session memory (SQLite)
-- Fully open-source, zero-cost Track A stack
+## Current Structure
 
-### Track B (Advanced Production Features)
-- Production-grade PostgreSQL multi-tenant schema
-- Real-time vitals ingestion and streaming alerts
-- Audit trails and provenance for recommendations
-- Role-based access control and compliance patterns
-- Kubernetes/cloud deployment with observability
-- React-based dashboard and mobile-ready UI
+```text
+Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/
+|-- docs/
+|   |-- references/
+|   |   |-- Medical-Knowledge-RAG-System.pdf
+|   |   `-- RAG-Implementation-Link.pdf
+|   `-- screenshots/
+|-- RAG/
+|   |-- .gitignore
+|   |-- agent/
+|   |-- interface/
+|   |-- retrieval/
+|   |-- tools/
+|   |-- Scripts/
+|   |-- tests/
+|   |-- requirements.txt
+|   |-- test_agent.py
+|   `-- test_retrieval.py
+|-- SETUP.md
+`-- README.md
+```
 
-## System Architecture
-- **Interface Layer:** Gradio (Track A) or React (Track B) frontends; session handling and lightweight auth.
-- **Agent Layer:** Orchestrates intent classification, tool-selection policy, multi-step planning, and safety checks.
-- **RAG Layer:** Document loaders, chunking, embeddings, and vector search for evidence retrieval.
-- **Tool Layer:** Encapsulated utilities (Medication Reminder, Drug Interaction Checker, Risk Predictor, Report Generator) exposed to the agent.
-- **Database Layer:** User profiles, memory, logs, and tool outputs. SQLite for Track A; PostgreSQL for Track B.
+## Features
 
-## Agent Workflow
-1. **Intent detection:** Classify user request (reminder, interaction check, risk assessment, report, general question).
-2. **Tool selection:** Policy decides which tool(s) to call using heuristics and few-shot guidance.
-3. **RAG retrieval:** Retrieve relevant documents/snippets from the vector DB when grounding is required.
-4. **Response generation:** LLM composes a grounded response using retrieved evidence and tool outputs; response includes provenance.
-5. **Memory update:** Persist scheduling, confirmations, and relevant outputs to the memory DB for future context and audit.
+- Hybrid Retrieval (FAISS + BM25)
+- Cross-Encoder Reranking
+- AI Agent with Tool Integration
+- Safety mechanism when no relevant knowledge is found
+- Gradio chat interface for quick demo
 
-## Tools Implemented
-- **Medication Reminder Tool:** Create/modify/cancel schedules; local scheduler with integration hooks for email/SMS.
-- **Drug Interaction Checker:** Query an offline, indexed reference; returns severity, actions, and citations.
-- **Health Risk Predictor (ML-based):** scikit-learn prototype that returns risk probabilities and contributing factors.
-- **Health Report Generator:** Consolidates signals, agent decisions, and RAG evidence into downloadable summaries.
+## Data And Ignore Policy
 
-## RAG Pipeline
-- **Document loading:** Ingest clinical guidelines, drug monographs, user records, and SOPs in structured formats.
-- **Chunking:** Overlap-aware splitting (e.g., 500–1,000 token chunks with ~20% overlap) to preserve context.
-- **Embeddings:** Use Sentence-Transformers to encode chunks into dense vectors.
-- **FAISS vector DB:** Local FAISS index for fast nearest-neighbor retrieval (Track A); prepared for managed vector DB in Track B.
-- **Retrieval injection:** Inject top-k retrieved snippets (with source metadata and scores) into LLM prompts for grounded generation.
+The following items are intentionally ignored and should stay ignored:
 
-## Tech Stack
-- **Development:** Google Colab (Phase 1), VS Code (Phase 2)
-- **AI & Orchestration:** LangChain, HuggingFace LLM (configurable)
-- **RAG:** FAISS, Sentence-Transformers
-- **ML:** scikit-learn, pandas
-- **Database:** SQLite (Track A), PostgreSQL (Track B)
-- **Backend:** FastAPI
-- **Frontend:** Gradio (Track A), React (Track B)
+- RAG/Datasets/
+- RAG/medical_rag_dataset.json
+- RAG/medical_vector_db.faiss
 
-Note: The Track A stack is fully open-source and zero cost.
+These assets are needed at runtime but should not be committed.
 
-## Installation Instructions (Track A)
-1. Clone the repository and change into the project directory:
+## Where To Restore Missing Data Files
+
+If teammates clone fresh and do not have the data assets:
+
+1. Download the backup zip from the Drive link above.
+2. Copy these into the local RAG folder:
+   - Datasets/ folder
+   - medical_rag_dataset.json
+   - medical_vector_db.faiss
+3. Do not add these files to git.
+
+## Quick Start
+
+Use the full teammate setup instructions in SETUP.md.
+
+## Remaining Steps For Team Submission
+
+### 1. Run test flow
+
+From inside RAG/:
 
 ```powershell
-git clone https://github.com/<your-org>/Team_Agent_Wars_Healthcare-Monitoring-AI-Agent.git
-cd Team_Agent_Wars_Healthcare-Monitoring-AI-Agent
+python test_agent.py
 ```
 
-2. Create and activate a Python virtual environment (Windows PowerShell):
+Verify outputs for:
+- disease query -> relevant symptoms/treatment
+- drug query -> side effects/interactions
+- nutrition query -> relevant nutrition answer
+- nonsense query -> safety fallback message
+- interaction query -> tool response
+
+Also verify edge cases:
+- asdasdasd
+- unknown disease xyz
+
+Expected behavior: "No relevant medical information found." (or equivalent safe fallback)
+
+### 2. Capture screenshot for demo
+
+1. Start UI from RAG/:
 
 ```powershell
-python -m venv .venv
-.venv\\Scripts\\Activate.ps1
+python interface/app.py
 ```
 
-3. Install dependencies:
+2. Open local Gradio URL shown in terminal.
+3. Ask 2-3 good sample queries.
+4. Capture screenshot showing:
+   - title
+   - query input
+   - output response
+5. Save screenshot to docs/screenshots/demo.png
 
-```powershell
-pip install --upgrade pip
-pip install -r requirements.txt
+### 3. Update README demo section (optional enhancement)
+
+After saving screenshot, add this markdown snippet:
+
+```markdown
+## Demo
+
+![Medical AI Assistant Demo](docs/screenshots/demo.png)
 ```
-
-4. Run the backend and UI (example):
-
-```powershell
-uvicorn app.main:app --reload
-# In another terminal, start the Gradio UI
-python app/ui/gradio_app.py
-```
-
-Notes:
-- Configure runtime variables (model keys, paths, scheduling) via a `.env` file.
-- Defaults are configured for local operation using SQLite and FAISS.
-
-## Project Structure
-```
-├── backend/                     # FastAPI backend and agent runtime
-│   ├── api/                     # HTTP endpoints and routers
-│   ├── agents/                  # Agent orchestration, policies, tool wiring
-│   ├── tools/                   # Tool implementations (reminder, checker, predictor, report)
-│   ├── rag/                     # Document loaders, chunking, embeddings, FAISS index
-│   ├── models/                  # ML training, model artifacts and serializers
-│   ├── db/                      # Database schemas, migrations (SQLite/Postgres adapters)
-│   └── scripts/                 # Backend utilities (ingest, indexing, maintenance)
-├── frontend/                    # UI codebases
-│   ├── gradio/                  # Track A quick demo apps and prototypes
-│   └── react/                   # Track B production dashboard (React app)
-├── data/                        # Sample datasets, clinical references, and fixtures
-├── docs/                        # Architecture diagrams, API contracts, onboarding guides
-├── tests/                       # Unit and integration tests for backend and frontend
-├── requirements.txt             # Python dependencies for Track A
-├── docker/                      # Dockerfiles and compose for local/dev environments
-└── README.md
-```
-
-## Future Improvements
-- Voice-based health queries (speech-to-text + TTS)
-- Real-time monitoring and streaming alert pipelines
-- Image-based pill detection and verification
-- Cloud deployment with managed vector DB and model hosting
-- Expanded evidence sources and clinical API integrations
-- Explainability tooling (SHAP-style explanations for ML models)
 
 ## Disclaimer
-This system is for informational purposes only and is not a substitute for professional medical advice.
 
-Built as part of a 2-month Agentic AI Internship Program.
+This project is for educational and informational use only, not a replacement for professional medical advice.

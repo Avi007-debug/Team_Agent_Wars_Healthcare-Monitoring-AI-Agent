@@ -1,0 +1,4 @@
+# Keep large/generated RAG assets untracked
+/RAG/Datasets/
+/RAG/medical_rag_dataset.json
+/RAG/medical_vector_db.faiss

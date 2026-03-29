@@ -64,51 +64,18 @@ def _contextualize_query(query, conversation_memory):
 	return f"{recent_context}. {query}"
 
 
-def _build_context(docs):
-	lines = []
+def format_response(docs):
 
-	for index, doc in enumerate(docs, start=1):
-		header = f"{index}. {doc.get('name', 'Unknown')} [{doc.get('type', 'general')} - {doc.get('section', 'overview')}]"
-		text = doc.get("text", "").strip()
-		lines.append(f"{header}\n{text}")
+	response = "🩺 Medical Information:\n\n"
 
-	return "\n\n".join(lines)
-
-
-def _extract_first_sentence(text):
-	cleaned = " ".join((text or "").split())
-	if not cleaned:
-		return "No summary sentence available."
-
-	for separator in [". ", "! ", "? "]:
-		if separator in cleaned:
-			return cleaned.split(separator, 1)[0].strip() + "."
-
-	return cleaned[:180] + ("..." if len(cleaned) > 180 else "")
-
-
-def _build_summary(docs):
-	summary_lines = []
-
-	for doc in docs[:3]:
+	for i, doc in enumerate(docs, start=1):
 		name = doc.get("name", "Unknown")
 		section = doc.get("section", "overview")
-		sentence = _extract_first_sentence(doc.get("text", ""))
-		summary_lines.append(f"- {name} ({section}): {sentence}")
-
-	return "\n".join(summary_lines)
-
-
-def _build_source_snippets(docs):
-	snippets = []
-
-	for index, doc in enumerate(docs, start=1):
-		header = f"{index}. [{doc.get('type', 'general')} - {doc.get('name', 'Unknown')} - {doc.get('section', 'overview')}]"
 		text = " ".join(doc.get("text", "").split())
-		snippet = text[:260] + ("..." if len(text) > 260 else "")
-		snippets.append(f"{header}\n   Snippet: {snippet}")
+		response += f"{i}. {name} ({section})\n"
+		response += f"   - {text}\n\n"
 
-	return "\n\n".join(snippets)
+	return response.strip()
 
 
 def answer_query(query, conversation_memory=None):
@@ -118,22 +85,6 @@ def answer_query(query, conversation_memory=None):
 	docs = retrieve(augmented_query)
 
 	if not docs or no_knowledge_check(augmented_query, docs):
-		return "No relevant information found in the dataset."
+		return "No relevant medical information found."
 
-	summary = _build_summary(docs)
-	context = _build_context(docs)
-	source_snippets = _build_source_snippets(docs)
-
-	answer = f"""Medical Information Found
-
-Summary:
-{summary}
-
-Detailed Context:
-{context}
-
-Sources:
-{source_snippets}
-"""
-
-	return answer
+	return format_response(docs)

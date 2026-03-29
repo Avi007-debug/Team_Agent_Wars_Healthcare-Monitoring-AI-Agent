@@ -1,9 +1,9 @@
 def predict_risk(age, blood_pressure):
 
-	if blood_pressure > 160:
-		return f"Age {age} with blood pressure {blood_pressure} suggests high cardiovascular risk. Consider medical evaluation."
+	if blood_pressure > 150:
+		return f"High risk: Age {age} with blood pressure {blood_pressure}. Blood pressure is dangerously high."
 
-	if blood_pressure > 140:
-		return f"Age {age} with blood pressure {blood_pressure} suggests elevated risk of hypertension."
+	if blood_pressure > 130:
+		return f"Moderate risk: Age {age} with blood pressure {blood_pressure}. Monitor blood pressure."
 
-	return f"Age {age} with blood pressure {blood_pressure} suggests blood pressure is within a lower-risk range."
+	return f"Normal blood pressure range for this simple check: Age {age}, blood pressure {blood_pressure}."

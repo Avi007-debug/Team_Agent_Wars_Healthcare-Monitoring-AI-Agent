@@ -228,7 +228,7 @@ def retrieve(query, k=5):
 
 	bm25_scores = bm25.get_scores(token_query)
 
-	bm25_top = np.argsort(bm25_scores)[-80:]
+	bm25_top = np.argsort(bm25_scores)[-100:]
 
 
 	# ---------------------------------------------------
@@ -238,7 +238,7 @@ def retrieve(query, k=5):
 	query_embedding = model.encode([query])
 	query_embedding = np.array(query_embedding).astype("float32")
 
-	D, I = index.search(query_embedding, 80)
+	D, I = index.search(query_embedding, 100)
 
 	faiss_indices = I[0]
 
@@ -313,7 +313,7 @@ def retrieve(query, k=5):
 	# Cross Encoder Reranking
 	# ---------------------------------------------------
 
-	top_candidates = [doc for _, doc in candidates[:40]]
+	top_candidates = [doc for _, doc in candidates[:50]]
 
 	pairs = [(query, doc["text"]) for doc in top_candidates]
 
@@ -322,6 +322,10 @@ def retrieve(query, k=5):
 	reranked = sorted(zip(scores, top_candidates), key=lambda x: x[0], reverse=True)
 
 	results = [doc for _, doc in reranked[:k]]
+
+	print("\n[DEBUG] Retrieved docs:")
+	for doc in results:
+		print(doc.get("name", "Unknown"), "-", doc.get("section", "overview"))
 
 	# ---------------------------------------------------
 

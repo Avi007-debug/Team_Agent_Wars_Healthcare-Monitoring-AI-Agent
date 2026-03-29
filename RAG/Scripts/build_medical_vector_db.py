@@ -1,15 +1,19 @@
 import json
+from pathlib import Path
 import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
 
 print("Loading datasets...")
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+RAG_DIR = SCRIPT_DIR.parent
+
 files = [
-    "drug_rag_final.json",
-    "disease_rag.json",
-    "guideline_rag.json",
-    "nutrition_rag.json"
+    SCRIPT_DIR / "drug" / "drug_rag_final.json",
+    SCRIPT_DIR / "disease" / "disease_rag.json",
+    SCRIPT_DIR / "guideline_rag.json",
+    SCRIPT_DIR / "nutrition_rag.json",
 ]
 
 data = []
@@ -26,7 +30,11 @@ def normalize_document(doc):
     if len(text) < 20:
         return None
 
-    doc_type = str(doc.get("type", "unknown")).strip().lower() or "unknown"
+    if doc.get("drug_name") and not doc.get("type"):
+        doc_type = "drug"
+    else:
+        doc_type = str(doc.get("type", "unknown")).strip().lower() or "unknown"
+
     name = str(doc.get("name") or doc.get("drug_name") or "unknown").strip()
     section = str(doc.get("section", "overview")).strip().lower() or "overview"
 
@@ -53,10 +61,12 @@ for doc in data:
 data = clean_data
 
 print("Total documents after cleaning:", len(data))
+print("New dataset size:", len(data))
 
 
 # Save merged dataset
-with open("medical_rag_dataset.json", "w", encoding="utf-8") as f:
+dataset_out = RAG_DIR / "medical_rag_dataset.json"
+with open(dataset_out, "w", encoding="utf-8") as f:
     json.dump(data, f, indent=2)
 
 print("Merged dataset saved")
@@ -80,7 +90,8 @@ index = faiss.IndexFlatL2(dimension)
 
 index.add(embeddings)
 
-faiss.write_index(index, "medical_vector_db.faiss")
+index_out = RAG_DIR / "medical_vector_db.faiss"
+faiss.write_index(index, str(index_out))
 
 print("Vector DB created successfully")
 

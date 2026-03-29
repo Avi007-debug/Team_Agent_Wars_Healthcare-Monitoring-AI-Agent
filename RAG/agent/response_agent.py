@@ -1,6 +1,13 @@
 from agent.health_insights import generate_insights
 
 
+def _grounded_line(doc):
+	text = " ".join(doc.get("text", "").split())
+	name = doc.get("name", "Unknown")
+	section = doc.get("section", "overview")
+	return f"- {text} ({name} - {section})"
+
+
 def structured_response(docs):
 
 	symptoms = []
@@ -16,30 +23,30 @@ def structured_response(docs):
 			continue
 
 		if "symptom" in section:
-			symptoms.append(text)
+			symptoms.append(doc)
 
 		elif "treatment" in section:
-			treatment.append(text)
+			treatment.append(doc)
 
 		else:
-			others.append(text)
+			others.append(doc)
 
 	response = "🩺 Medical Answer:\n\n"
 
 	if symptoms:
 		response += "Symptoms:\n"
-		for s in symptoms:
-			response += f"- {s}\n"
+		for doc in symptoms:
+			response += _grounded_line(doc) + "\n"
 
 	if treatment:
 		response += "\nTreatment:\n"
-		for t in treatment:
-			response += f"- {t}\n"
+		for doc in treatment:
+			response += _grounded_line(doc) + "\n"
 
 	if others:
 		response += "\nAdditional Info:\n"
-		for o in others:
-			response += f"- {o}\n"
+		for doc in others:
+			response += _grounded_line(doc) + "\n"
 
 	return response.strip()
 

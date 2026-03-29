@@ -67,9 +67,9 @@ def _extract_risk_request(query):
 
 
 def _extract_bp_value(query):
-	bp_match = re.search(r"(?:blood pressure|bp)\s*(?:is|=)?\s*(\d+)", query)
-	if bp_match:
-		return int(bp_match.group(1))
+	numbers = re.findall(r"\d+", query or "")
+	if numbers:
+		return int(numbers[0])
 	return None
 
 
@@ -110,9 +110,9 @@ def tool_agent(query):
 		bp = _extract_bp_value(q)
 		diet_score = _extract_diet_score(q)
 		if bp is None:
-			bp = 150
+			return "For health analytics, include blood pressure value. Example: blood pressure 150 diet score 5."
 		if diet_score is None:
-			diet_score = 4
+			diet_score = 5
 		return analyze_health(bp, diet_score)
 
 	return None

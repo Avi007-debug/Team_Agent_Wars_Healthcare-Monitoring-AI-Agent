@@ -2,3 +2,17 @@
 /RAG/Datasets/
 /RAG/medical_rag_dataset.json
 /RAG/medical_vector_db.faiss
+
+# Python environment and cache artifacts
+.venv/
+**/__pycache__/
+*.pyc
+
+# Generated script outputs (rebuildable)
+/RAG/Scripts/disease/disease_rag.json
+/RAG/Scripts/drug/drug_rag_final.json
+/RAG/Scripts/guideline_rag.json
+/RAG/Scripts/nutrition_rag.json
+
+# Local archive bundles
+/RAG/datasets.zip

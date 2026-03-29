@@ -1,18 +1,21 @@
 def generate_insights(docs):
 
-	insights = []
+	insights = set()
 
 	for doc in docs:
 
 		text = doc.get("text", "").lower()
 
-		if "risk" in text:
-			insights.append("⚠️ Possible health risk identified")
+		if "high blood pressure" in text or "hypertension" in text:
+			insights.add("⚠️ Risk: Hypertension detected")
 
 		if "prevent" in text:
-			insights.append("✅ Preventive care recommended")
+			insights.add("✅ Prevention: Follow lifestyle changes")
+
+		if "side effect" in text or "adverse" in text:
+			insights.add("⚠️ Caution: Monitor adverse effects and seek medical guidance if severe")
 
 	if not insights:
-		return "No major insights found."
+		return "No major insights"
 
-	return "\n".join(dict.fromkeys(insights))
+	return "\n".join(sorted(insights))

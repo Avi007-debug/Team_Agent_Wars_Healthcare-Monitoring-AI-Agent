@@ -4,6 +4,9 @@ This guide helps teammates run the Medical RAG assistant locally.
 
 Project repository: https://github.com/Avi007-debug/Team_Agent_Wars_Healthcare-Monitoring-AI-Agent
 
+Updated RAG assets (latest datasets + vector files):
+https://drive.google.com/file/d/1Dz0GfoIwkxKhK2sKMLt44T-mq1O8JYYL/view?usp=sharing
+
 Backup RAG assets (older zip with proper datasets and final vector files):
 https://drive.google.com/file/d/1m-fUhmBdns8lD3BhdRqYpaclD7OXiSx/view?usp=sharing
 
@@ -54,11 +57,19 @@ The following files are intentionally gitignored and should stay unchanged in lo
 
 If these are missing on a fresh clone:
 
-1. Download and extract the backup zip from the Drive link above.
+1. Download and extract the latest zip from the updated Drive link above (use older link only if needed).
 2. Copy the `Datasets/` folder to `RAG/Datasets/`.
 3. Copy `medical_rag_dataset.json` to `RAG/medical_rag_dataset.json`.
 4. Copy `medical_vector_db.faiss` to `RAG/medical_vector_db.faiss`.
 5. Keep these files uncommitted (they are intentionally ignored).
+
+Exact expected locations:
+
+- `Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/RAG/medical_rag_dataset.json`
+- `Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/RAG/medical_vector_db.faiss`
+- `Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/RAG/Datasets/`
+
+Do not place these files in root folder or inside `RAG/Scripts/`.
 
 ## 6. Run Manual Test Suite
 

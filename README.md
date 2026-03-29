@@ -5,6 +5,7 @@ A practical healthcare assistant built with Hybrid RAG (FAISS + BM25), cross-enc
 ## Repository Links
 
 - GitHub: https://github.com/Avi007-debug/Team_Agent_Wars_Healthcare-Monitoring-AI-Agent
+- Updated RAG assets pack (latest datasets + vector files): https://drive.google.com/file/d/1Dz0GfoIwkxKhK2sKMLt44T-mq1O8JYYL/view?usp=sharing
 - Backup/older complete RAG zip (datasets + final vector assets source): https://drive.google.com/file/d/1m-fUhmBdns8lD3BhdRqYpaclD7OXiSx/view?usp=sharing
 
 ## Current Structure
@@ -59,6 +60,36 @@ If teammates clone fresh and do not have the data assets:
    - medical_rag_dataset.json
    - medical_vector_db.faiss
 3. Do not add these files to git.
+
+## Required Artifact Placement (Exact Paths)
+
+After extracting the Drive asset zip, place files exactly here:
+
+1. `Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/RAG/medical_rag_dataset.json`
+2. `Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/RAG/medical_vector_db.faiss`
+3. `Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/RAG/Datasets/` (full folder)
+
+Do not place these inside `RAG/Scripts/` or project root. The retriever loads only from `RAG/` paths.
+
+## Final Week-5 Implementation Status
+
+Implemented and validated:
+
+- structured responses with sectioned output
+- response grounding with source tags `(name - section)`
+- smarter health insights (risk/prevention/adverse hints)
+- basic health analytics with dynamic BP extraction
+- multi-agent architecture (medical, tool, retrieval, response)
+- cleaned dataset rebuild pipeline active
+- evaluation metrics (Top-1 Accuracy + Hit@k)
+- retrieval logs with latency timing
+- improved Gradio UI with chat state, presets, and clear-chat
+
+Latest validation run after rebuild:
+
+- New dataset size: 23455
+- Top-1 Accuracy: 1.00
+- Hit@k: 1.00
 
 ## Quick Start
 

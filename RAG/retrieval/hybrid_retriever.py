@@ -1,4 +1,5 @@
 import json
+import time
 from pathlib import Path
 import faiss
 import numpy as np
@@ -182,6 +183,7 @@ def no_knowledge_check(query, docs):
 
 def retrieve(query, k=5):
 	print("[LOG] Query:", query)
+	start = time.time()
 
 	domain_priority = {
 		"drug": 4,
@@ -236,8 +238,10 @@ def retrieve(query, k=5):
 			results.append((score, doc))
 
 		results.sort(key=lambda x: x[0], reverse=True)
-
-		return [doc for _, doc in results[:k]]
+		final_results = [doc for _, doc in results[:k]]
+		end = time.time()
+		print(f"[TIME] Retrieval took {end - start:.2f}s")
+		return final_results
 
 
 	# ---------------------------------------------------
@@ -358,6 +362,9 @@ def retrieve(query, k=5):
 	print("\n[DEBUG] Retrieved docs:")
 	for doc in results:
 		print(doc.get("name", "Unknown"), "-", doc.get("section", "overview"))
+
+	end = time.time()
+	print(f"[TIME] Retrieval took {end - start:.2f}s")
 
 	# ---------------------------------------------------
 

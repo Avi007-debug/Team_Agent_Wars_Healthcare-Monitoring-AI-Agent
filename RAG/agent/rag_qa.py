@@ -1,6 +1,8 @@
 import re
 
-from retrieval.hybrid_retriever import no_knowledge_check, retrieve
+from agent.response_agent import response_agent
+from retrieval.hybrid_retriever import no_knowledge_check
+from agent.retrieval_agent import retrieval_agent
 
 
 FOLLOW_UP_HINTS = {
@@ -101,14 +103,56 @@ def _contextualize_query(query, conversation_memory):
 
 def format_response(docs):
 
-	response = "🩺 Medical Information:\n\n"
+	response = "🩺 Medical Summary:\n\n"
 
-	for i, doc in enumerate(docs, start=1):
+	for i, doc in enumerate(docs):
 		name = doc.get("name", "Unknown")
 		section = doc.get("section", "overview")
+		response += f"{i + 1}. {name} ({section})\n"
+		response += f"   • {doc.get('text', '').strip()}\n\n"
+
+	return response
+
+
+def structured_response(docs):
+
+	symptoms = []
+	treatment = []
+	others = []
+
+	for doc in docs:
+
+		section = doc.get("section", "").lower()
 		text = " ".join(doc.get("text", "").split())
-		response += f"{i}. {name} ({section})\n"
-		response += f"   - {text}\n\n"
+
+		if not text:
+			continue
+
+		if "symptom" in section:
+			symptoms.append(text)
+
+		elif "treatment" in section:
+			treatment.append(text)
+
+		else:
+			others.append(text)
+
+	response = "🩺 Medical Answer:\n\n"
+
+	if symptoms:
+		response += "Symptoms:\n"
+		for s in symptoms:
+			response += f"- {s}\n"
+
+	if treatment:
+		response += "\nTreatment:\n"
+		for t in treatment:
+			response += f"- {t}\n"
+
+	if others:
+		response += "\nAdditional Info:\n"
+		for o in others:
+			response += f"- {o}\n"
 
 	return response.strip()
 
@@ -117,9 +161,9 @@ def answer_query(query, conversation_memory=None):
 
 	augmented_query = _contextualize_query(query, conversation_memory)
 
-	docs = retrieve(augmented_query)
+	docs = retrieval_agent(augmented_query)
 
 	if not docs or no_knowledge_check(query, docs):
 		return "No relevant medical information found."
 
-	return format_response(docs)
+	return response_agent(docs)

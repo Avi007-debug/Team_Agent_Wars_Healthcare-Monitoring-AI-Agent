@@ -18,7 +18,41 @@ for file in files:
     with open(file, "r", encoding="utf-8") as f:
         data.extend(json.load(f))
 
-print("Total documents:", len(data))
+print("Total documents before cleaning:", len(data))
+
+
+def normalize_document(doc):
+    text = " ".join(str(doc.get("text", "")).split())
+    if len(text) < 20:
+        return None
+
+    doc_type = str(doc.get("type", "unknown")).strip().lower() or "unknown"
+    name = str(doc.get("name") or doc.get("drug_name") or "unknown").strip()
+    section = str(doc.get("section", "overview")).strip().lower() or "overview"
+
+    return {
+        "type": doc_type,
+        "name": name,
+        "section": section,
+        "text": text,
+    }
+
+
+unique_texts = set()
+clean_data = []
+
+for doc in data:
+    normalized = normalize_document(doc)
+    if normalized is None:
+        continue
+
+    if normalized["text"] not in unique_texts:
+        unique_texts.add(normalized["text"])
+        clean_data.append(normalized)
+
+data = clean_data
+
+print("Total documents after cleaning:", len(data))
 
 
 # Save merged dataset

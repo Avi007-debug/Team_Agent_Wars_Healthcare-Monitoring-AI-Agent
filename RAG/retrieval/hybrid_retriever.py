@@ -181,6 +181,8 @@ def no_knowledge_check(query, docs):
 # ---------------------------------------------------
 
 def retrieve(query, k=5):
+	print("[LOG] Query:", query)
+
 	domain_priority = {
 		"drug": 4,
 		"disease": 3,

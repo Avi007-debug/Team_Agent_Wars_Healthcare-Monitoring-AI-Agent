@@ -5,7 +5,7 @@ A practical healthcare assistant built with Hybrid RAG (FAISS + BM25), cross-enc
 ## Repository Links
 
 - GitHub: https://github.com/Avi007-debug/Team_Agent_Wars_Healthcare-Monitoring-AI-Agent
-- Backup/older complete RAG zip (datasets + final vector assets source): https://drive.google.com/file/d/1m-fUhmBdns8lD3BhdRqYpaclD7OXiSx/view?usp=sharing
+- Backup/older complete RAG zip (datasets + final vector assets source): [https://drive.google.com/file/d/1m-fUhmBdns8lD3BhdRqYpaclD7OXiSx/view?usp=sharing](https://drive.google.com/file/d/1m-fUhm-Bdns8lD3BhdRqYpaclD7OXiSx/view?usp=drive_link)
 
 ## Current Structure
 

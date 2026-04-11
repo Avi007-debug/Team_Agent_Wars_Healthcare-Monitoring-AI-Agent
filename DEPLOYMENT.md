@@ -21,7 +21,7 @@ Medical Agent → Retriever + Tools → Dataset
 | Setting | Value |
 |---|---|
 | Framework | Vite |
-| Root Directory | `RAG/medical-frontend` |
+| Root Directory | `frontend` |
 | Build Command | `npm run build` |
 | Output Directory | `dist` |
 | Install Command | `npm install` |
@@ -36,14 +36,14 @@ Medical Agent → Retriever + Tools → Dataset
 
 ```bash
 # Option A: Vercel CLI
-cd RAG/medical-frontend
+cd frontend
 npm i -g vercel
 vercel --prod
 
 # Option B: GitHub integration
 # 1. Push code to GitHub
 # 2. Import repo in vercel.com
-# 3. Set root directory to RAG/medical-frontend
+# 3. Set root directory to frontend
 # 4. Set VITE_API_URL env variable
 # 5. Deploy
 ```
@@ -56,9 +56,9 @@ vercel --prod
 
 ### 2. Create Files Needed
 
-**`RAG/Procfile`** (if not using render.yaml):
+**`backend/Procfile`** (if not using render.yaml):
 ```
-web: uvicorn backend.api:app --host 0.0.0.0 --port $PORT
+web: uvicorn api:app --host 0.0.0.0 --port $PORT
 ```
 
 ### 3. Build Settings on Render
@@ -66,9 +66,9 @@ web: uvicorn backend.api:app --host 0.0.0.0 --port $PORT
 | Setting | Value |
 |---|---|
 | Environment | Python 3 |
-| Root Directory | `RAG` |
+| Root Directory | `backend` |
 | Build Command | `pip install -r requirements.txt` |
-| Start Command | `uvicorn backend.api:app --host 0.0.0.0 --port $PORT` |
+| Start Command | `uvicorn api:app --host 0.0.0.0 --port $PORT` |
 
 ### 4. Environment Variables
 
@@ -83,7 +83,7 @@ web: uvicorn backend.api:app --host 0.0.0.0 --port $PORT
 # Option A: Render Dashboard
 # 1. Create "New Web Service" on render.com
 # 2. Connect your GitHub repo
-# 3. Set root directory to RAG
+# 3. Set root directory to backend
 # 4. Set build and start commands
 # 5. Deploy
 

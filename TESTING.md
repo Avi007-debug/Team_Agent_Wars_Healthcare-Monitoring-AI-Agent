@@ -7,13 +7,13 @@
 
 ### Start Backend
 ```bash
-cd RAG
-python -m uvicorn backend.api:app --reload --host 127.0.0.1 --port 8000
+cd backend
+python -m uvicorn api:app --reload --host 127.0.0.1 --port 8000
 ```
 
 ### Start Frontend
 ```bash
-cd RAG/medical-frontend
+cd frontend
 npm run dev
 ```
 

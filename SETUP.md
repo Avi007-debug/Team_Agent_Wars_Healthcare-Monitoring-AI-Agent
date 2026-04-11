@@ -1,29 +1,32 @@
 # Team Setup Guide
 
-This guide helps teammates run the Medical RAG assistant locally.
+This guide helps teammates run the project after the Week-7 reorganization.
 
 Project repository: https://github.com/Avi007-debug/Team_Agent_Wars_Healthcare-Monitoring-AI-Agent
 
-Updated RAG assets (latest datasets + vector files):
-https://drive.google.com/file/d/1Dz0GfoIwkxKhK2sKMLt44T-mq1O8JYYL/view?usp=sharing
+## 1. Project Layout
 
-Backup RAG assets (older zip with proper datasets and final vector files):
-https://drive.google.com/file/d/1m-fUhmBdns8lD3BhdRqYpaclD7OXiSx/view?usp=sharing
+- `backend/` -> FastAPI API, RAG pipeline, tools, datasets, tests
+- `frontend/` -> Main 3-page React website (Home, Chat, About)
+- `frontend/medical-frontend/` -> Secondary/legacy React UI
 
-## 1. Prerequisites
+Use each folder directly when running that part of the project.
+
+## 2. Prerequisites
 
 - Python 3.10 or 3.11
-- pip
+- Node.js 18+
+- npm
 - Git
 
-## 2. Clone Repository
+## 3. Clone Repository
 
 ```powershell
 git clone https://github.com/Avi007-debug/Team_Agent_Wars_Healthcare-Monitoring-AI-Agent.git
 cd Team_Agent_Wars_Healthcare-Monitoring-AI-Agent
 ```
 
-## 3. Create and Activate Virtual Environment
+## 4. Create and Activate Virtual Environment
 
 ### Windows PowerShell
 
@@ -39,128 +42,87 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-## 4. Install Dependencies
+## 5. Install Backend Dependencies
 
 ```powershell
-cd RAG
+cd backend
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## 5. Confirm Required RAG Files
+## 6. Confirm Required Backend Data Files
 
-The following files are intentionally gitignored and should stay unchanged in local setups:
+The following files are intentionally gitignored and should stay local:
 
-- `RAG/medical_rag_dataset.json`
-- `RAG/medical_vector_db.faiss`
-- `RAG/Datasets/`
+- `backend/medical_rag_dataset.json`
+- `backend/medical_vector_db.faiss`
+- `backend/Datasets/`
 
-If these are missing on a fresh clone:
+If missing on a fresh clone:
 
-1. Download and extract the latest zip from the updated Drive link above (use older link only if needed).
-2. Copy the `Datasets/` folder to `RAG/Datasets/`.
-3. Copy `medical_rag_dataset.json` to `RAG/medical_rag_dataset.json`.
-4. Copy `medical_vector_db.faiss` to `RAG/medical_vector_db.faiss`.
-5. Keep these files uncommitted (they are intentionally ignored).
+1. Download/extract data bundle from your team source.
+2. Copy `Datasets/` to `backend/Datasets/`.
+3. Copy `medical_rag_dataset.json` to `backend/medical_rag_dataset.json`.
+4. Copy `medical_vector_db.faiss` to `backend/medical_vector_db.faiss`.
 
-Exact expected locations:
+## 7. Run Backend (FastAPI)
 
-- `Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/RAG/medical_rag_dataset.json`
-- `Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/RAG/medical_vector_db.faiss`
-- `Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/RAG/Datasets/`
-
-Do not place these files in root folder or inside `RAG/Scripts/`.
-
-## 6. Run Manual Test Suite
+From repository root:
 
 ```powershell
-python test_agent.py
-```
-
-This runs:
-- custom query checks from `RAG/tests/test_queries_custom.txt` when present
-- otherwise defaults to `RAG/tests/test_queries.txt`
-- edge-case checks (`asdasdasd`, `unknown disease xyz`)
-- interactive mode after automated checks
-
-Manual validation checklist:
-
-- disease query should return relevant symptoms/treatment
-- drug side-effect query should return relevant drug section
-- nutrition query should return relevant food/nutrition context
-- interaction query should use the interaction tool output
-- nonsense query should return safety fallback message
-
-## 7. Run FastAPI Backend (Week-6)
-
-From inside `RAG/`:
-
-```powershell
-uvicorn backend.api:app --reload
+cd backend
+..\.venv\Scripts\python.exe -m uvicorn api:app --reload
 ```
 
 Open Swagger UI:
 
 - http://127.0.0.1:8000/docs
 
-Available endpoints:
+## 8. Run Backend Tests and Manual Checks
 
-- `POST /ask` for assistant responses
-- `POST /predict` for health risk prediction
-- `POST /interaction` for drug interactions
-- `GET /health` for service status
-
-## 8. Run API Test Script
-
-Start backend first, then in a second terminal (still inside `RAG/`):
+From `backend/`:
 
 ```powershell
+python test_agent.py
 python tests/test_api.py
 ```
 
-## 9. Launch Gradio UI
+## 9. Install and Run Main Frontend
+
+From repository root:
 
 ```powershell
-python interface/app.py
+cd frontend
+npm install
+npm run dev
 ```
 
-Open the local URL shown in terminal.
+Main frontend (3-page app) routes:
 
-## 10. Capture Demo Screenshot
+- `/` Home
+- `/chat` Chat
+- `/about` About
 
-1. Keep app running in browser.
-2. Ask 2-3 queries (example: symptoms of diabetes, drug interaction aspirin ibuprofen).
-3. Capture a screenshot showing both query and response.
-4. Save it as `docs/screenshots/demo.png` in the repository root.
-5. Add this snippet in `README.md` under Demo section:
+## 10. Optional: Run Secondary Frontend
 
-```markdown
-![Medical AI Assistant Demo](docs/screenshots/demo.png)
+```powershell
+cd frontend/medical-frontend
+npm install
+npm run dev
 ```
 
-For Week-6 demo, include Swagger UI (`/docs`) screenshot as well.
+## 11. Common Troubleshooting
 
-## 11. Troubleshooting
+- Backend import issue: run backend commands from `backend/` only.
+- Frontend build issue: run frontend commands from `frontend/` only.
+- If `faiss` install fails on Windows:
+  - `pip install faiss-cpu==1.13.2`
+- First model load can be slow due to transformer downloads/caching.
 
-- If `faiss` install fails on Windows, re-run `pip install faiss-cpu==1.13.2` after upgrading pip.
-- If model download is slow, wait for first run to cache `sentence-transformers` models.
-- If import errors occur, ensure command is run from inside `RAG/`.
-- If API import fails, verify `RAG/backend/api.py` exists and run uvicorn from `RAG/`.
-
-## 12. Suggested Team Workflow
+## 12. Recommended Workflow
 
 1. Pull latest code.
 2. Activate `.venv`.
-3. Run `python test_agent.py` before pushing.
-4. Keep gitignored datasets/vector DB unchanged unless a dedicated data update task is assigned.
-
-## 13. Current RAG Structure
-
-Key Week-6 folders:
-
-- `RAG/agent/`
-- `RAG/retrieval/`
-- `RAG/tools/`
-- `RAG/interface/`
-- `RAG/backend/`
-- `RAG/tests/`
+3. Start backend from `backend/`.
+4. Start frontend from `frontend/`.
+5. Run `backend/test_agent.py` before pushing backend changes.

@@ -16,3 +16,4 @@
 
 # Local archive bundles
 /RAG/datasets.zip
+/node_modules

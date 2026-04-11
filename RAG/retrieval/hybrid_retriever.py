@@ -381,7 +381,7 @@ def retrieve(query, k=5):
 	# Cross Encoder Reranking
 	# ---------------------------------------------------
 
-	top_candidates = [doc for _, doc in candidates[:50]]
+	top_candidates = [doc for _, doc in candidates[:30]]
 
 	pairs = [(query, doc["text"]) for doc in top_candidates]
 

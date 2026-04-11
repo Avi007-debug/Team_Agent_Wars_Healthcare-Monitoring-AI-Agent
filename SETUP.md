@@ -78,7 +78,8 @@ python test_agent.py
 ```
 
 This runs:
-- default query checks from `RAG/tests/test_queries.txt`
+- custom query checks from `RAG/tests/test_queries_custom.txt` when present
+- otherwise defaults to `RAG/tests/test_queries.txt`
 - edge-case checks (`asdasdasd`, `unknown disease xyz`)
 - interactive mode after automated checks
 
@@ -90,7 +91,34 @@ Manual validation checklist:
 - interaction query should use the interaction tool output
 - nonsense query should return safety fallback message
 
-## 7. Launch Gradio UI
+## 7. Run FastAPI Backend (Week-6)
+
+From inside `RAG/`:
+
+```powershell
+uvicorn backend.api:app --reload
+```
+
+Open Swagger UI:
+
+- http://127.0.0.1:8000/docs
+
+Available endpoints:
+
+- `POST /ask` for assistant responses
+- `POST /predict` for health risk prediction
+- `POST /interaction` for drug interactions
+- `GET /health` for service status
+
+## 8. Run API Test Script
+
+Start backend first, then in a second terminal (still inside `RAG/`):
+
+```powershell
+python tests/test_api.py
+```
+
+## 9. Launch Gradio UI
 
 ```powershell
 python interface/app.py
@@ -98,7 +126,7 @@ python interface/app.py
 
 Open the local URL shown in terminal.
 
-## 8. Capture Demo Screenshot
+## 10. Capture Demo Screenshot
 
 1. Keep app running in browser.
 2. Ask 2-3 queries (example: symptoms of diabetes, drug interaction aspirin ibuprofen).
@@ -110,15 +138,29 @@ Open the local URL shown in terminal.
 ![Medical AI Assistant Demo](docs/screenshots/demo.png)
 ```
 
-## 9. Troubleshooting
+For Week-6 demo, include Swagger UI (`/docs`) screenshot as well.
+
+## 11. Troubleshooting
 
 - If `faiss` install fails on Windows, re-run `pip install faiss-cpu==1.13.2` after upgrading pip.
 - If model download is slow, wait for first run to cache `sentence-transformers` models.
 - If import errors occur, ensure command is run from inside `RAG/`.
+- If API import fails, verify `RAG/backend/api.py` exists and run uvicorn from `RAG/`.
 
-## 10. Suggested Team Workflow
+## 12. Suggested Team Workflow
 
 1. Pull latest code.
 2. Activate `.venv`.
 3. Run `python test_agent.py` before pushing.
 4. Keep gitignored datasets/vector DB unchanged unless a dedicated data update task is assigned.
+
+## 13. Current RAG Structure
+
+Key Week-6 folders:
+
+- `RAG/agent/`
+- `RAG/retrieval/`
+- `RAG/tools/`
+- `RAG/interface/`
+- `RAG/backend/`
+- `RAG/tests/`

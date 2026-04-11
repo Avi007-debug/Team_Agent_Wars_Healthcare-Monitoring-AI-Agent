@@ -1,9 +1,9 @@
 import re
 
 from tools.drug_interaction_tool import check_drug_interaction
-from tools.health_analytics import analyze_health
+from tools.alert_system import generate_alerts
+from tools.health_predictor import predict_health_risk
 from tools.reminder_tool import set_reminder
-from tools.risk_predictor import predict_risk
 
 
 GENERIC_ENTITY_WORDS = {
@@ -66,17 +66,15 @@ def _extract_risk_request(query):
 	return int(age_match.group(1)), int(bp_match.group(1))
 
 
-def _extract_bp_value(query):
-	numbers = re.findall(r"\d+", query or "")
-	if numbers:
-		return int(numbers[0])
-	return None
+def extract_numbers(query):
+	nums = re.findall(r"\d+", query or "")
+	return [int(n) for n in nums]
 
 
-def _extract_diet_score(query):
-	diet_match = re.search(r"diet(?: score)?\s*(?:is|=)?\s*(\d+)", query)
-	if diet_match:
-		return int(diet_match.group(1))
+def _extract_heart_rate(query):
+	heart_rate_match = re.search(r"(?:heart rate|hr)\s*(?:is|=)?\s*(\d+)", query or "")
+	if heart_rate_match:
+		return int(heart_rate_match.group(1))
 	return None
 
 
@@ -101,18 +99,36 @@ def tool_agent(query):
 		return set_reminder(medicine, time)
 
 	if "risk" in q:
+		numbers = extract_numbers(q)
 		age, blood_pressure = _extract_risk_request(q)
-		if age is not None and blood_pressure is not None:
-			return predict_risk(age, blood_pressure)
-		return "For risk check, include age and blood pressure. Example: age 52 blood pressure 150."
+
+		if age is None or blood_pressure is None:
+			if len(numbers) >= 2:
+				age, blood_pressure = numbers[0], numbers[1]
+			elif len(numbers) == 1:
+				age, blood_pressure = 30, numbers[0]
+			else:
+				return "For risk check, include age and blood pressure. Example: age 52 blood pressure 150."
+
+		heart_rate = _extract_heart_rate(q)
+		prediction = predict_health_risk(age, blood_pressure)
+		alerts = generate_alerts(blood_pressure, heart_rate)
+
+		return f"{prediction}\n\nAlerts:\n" + "\n".join(alerts)
 
 	if "bp" in q or "blood pressure" in q:
-		bp = _extract_bp_value(q)
-		diet_score = _extract_diet_score(q)
-		if bp is None:
-			return "For health analytics, include blood pressure value. Example: blood pressure 150 diet score 5."
-		if diet_score is None:
-			diet_score = 5
-		return analyze_health(bp, diet_score)
+		numbers = extract_numbers(q)
+		if len(numbers) >= 2:
+			age, blood_pressure = numbers[0], numbers[1]
+		elif len(numbers) == 1:
+			age, blood_pressure = 30, numbers[0]
+		else:
+			return "For blood pressure checks, include BP value. Example: bp 150 or age 45 bp 150."
+
+		heart_rate = _extract_heart_rate(q)
+		prediction = predict_health_risk(age, blood_pressure)
+		alerts = generate_alerts(blood_pressure, heart_rate)
+
+		return f"{prediction}\n\nAlerts:\n" + "\n".join(alerts)
 
 	return None

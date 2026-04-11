@@ -9,7 +9,7 @@ def medical_agent(query, conversation_memory=None):
 	if not q:
 		return "Please enter a medical question or command. Example: symptoms of diabetes."
 
-	tool_result = tool_agent(q)
+	tool_result = tool_agent(query)
 	if tool_result:
 		return tool_result
 

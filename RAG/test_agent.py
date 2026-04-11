@@ -38,8 +38,6 @@ def run_edge_cases():
 if __name__ == "__main__":
 	base_dir = Path(__file__).resolve().parent
 	test_file = base_dir / "tests" / "test_queries_custom.txt"
-	if not test_file.exists():
-		test_file = base_dir / "tests" / "test_queries.txt"
 
 	run_query_file(test_file)
 	run_edge_cases()

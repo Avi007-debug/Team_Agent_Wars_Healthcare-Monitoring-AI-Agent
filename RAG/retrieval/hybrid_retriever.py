@@ -140,6 +140,19 @@ def detect_section(query):
 def detect_entity(query):
 
 	q = query.lower()
+	q_terms = set(re.findall(r"[a-z0-9]+", q))
+	generic_terms = {
+		"symptom", "symptoms", "disease", "treatment", "drug", "drugs",
+		"interaction", "interactions", "warning", "warnings", "purpose",
+		"nutrition", "food", "diet", "guideline", "guidelines", "prevention",
+		"side", "effects", "effect", "risk", "for", "and", "the", "with", "about"
+	}
+	query_entity_terms = {w for w in q_terms if w not in generic_terms}
+	if not query_entity_terms:
+		query_entity_terms = q_terms
+
+	best_name = None
+	best_overlap = 0
 
 	for name in entity_index.keys():
 
@@ -148,6 +161,16 @@ def detect_entity(query):
 
 		if len(q) >= 6 and q in name:
 			return name
+
+		name_terms = set(re.findall(r"[a-z0-9]+", name))
+		overlap = len(query_entity_terms.intersection(name_terms))
+
+		if overlap >= 1 and overlap > best_overlap:
+			best_name = name
+			best_overlap = overlap
+
+	if best_name:
+		return best_name
 
 	return None
 
@@ -159,6 +182,15 @@ def detect_entity(query):
 def no_knowledge_check(query, docs):
 
 	query_words = set(tokenize(query))
+	generic_words = {
+		"symptom", "symptoms", "disease", "treatment", "drug", "drugs",
+		"interaction", "interactions", "warning", "warnings", "purpose",
+		"nutrition", "food", "diet", "guideline", "guidelines", "prevention",
+		"unknown"
+	}
+	informative_words = {w for w in query_words if w not in generic_words}
+	if not informative_words:
+		informative_words = query_words
 
 	match_count = 0
 
@@ -168,9 +200,9 @@ def no_knowledge_check(query, docs):
 		name = doc.get("name", "").lower()
 		section = doc.get("section", "").lower().replace("_", " ")
 		doc_tokens = set(tokenize(f"{name} {section} {text}"))
-		overlap = query_words.intersection(doc_tokens)
+		overlap = informative_words.intersection(doc_tokens)
 
-		if len(overlap) >= 2:
+		if len(overlap) >= 1:
 			match_count += 1
 
 	return match_count == 0

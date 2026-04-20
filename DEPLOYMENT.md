@@ -2,119 +2,139 @@
 
 ## Architecture
 
+```text
+Browser User
+    -> Vercel Frontend (React + Vite)
+    -> Render/Railway Backend (FastAPI)
+    -> Medical Agent (RAG + Tools)
+    -> Local dataset/index assets
+
+Auth + chat persistence:
+Frontend -> Supabase Auth + chat_history table
 ```
-User (Browser)
-    ↓
-Frontend (React on Vercel)
-    ↓
-API (FastAPI on Render)
-    ↓
-Medical Agent → Retriever + Tools → Dataset
+
+## 1. Pre-Deployment Checklist
+
+1. Backend runs locally from venv.
+2. Frontend runs locally with Vite.
+3. Supabase project is created and keys are available.
+4. Supabase table `chat_history` exists.
+
+Supabase SQL:
+
+```sql
+create extension if not exists "uuid-ossp";
+
+create table if not exists chat_history (
+    id uuid default uuid_generate_v4() primary key,
+    user_id text,
+    query text,
+    response text,
+    created_at timestamp default now()
+);
 ```
 
----
+## 2. Backend Deployment (Render)
 
-## Frontend Deployment (Vercel)
-
-### 1. Build Settings
+### A. Render Dashboard Setup
 
 | Setting | Value |
 |---|---|
-| Framework | Vite |
-| Root Directory | `frontend` |
-| Build Command | `npm run build` |
-| Output Directory | `dist` |
-| Install Command | `npm install` |
+| Service Type | Web Service |
+| Runtime | Python |
+| Root Directory | `backend` |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn api:app --host 0.0.0.0 --port 10000` |
 
-### 2. Environment Variables
+### B. Recommended Environment Variables
 
 | Variable | Value |
 |---|---|
-| `VITE_API_URL` | `https://your-backend.onrender.com` |
+| `PYTHON_VERSION` | `3.11.9` |
+| `PORT` | `10000` (Render will provide if omitted) |
 
-### 3. Deploy Steps
+### C. Render Notes
 
-```bash
-# Option A: Vercel CLI
-cd frontend
-npm i -g vercel
-vercel --prod
+- Large RAG assets can exceed free-tier limits.
+- First request after idle can be slow due to model warm-up.
+- Ensure `backend/medical_rag_dataset.json` and `backend/medical_vector_db.faiss` are available to the deployed instance.
 
-# Option B: GitHub integration
-# 1. Push code to GitHub
-# 2. Import repo in vercel.com
-# 3. Set root directory to frontend
-# 4. Set VITE_API_URL env variable
-# 5. Deploy
-```
+## 3. Backend Deployment (Railway Alternative)
 
----
-
-## Backend Deployment (Render)
-
-### 1. Create `render.yaml` (already included)
-
-### 2. Create Files Needed
-
-**`backend/Procfile`** (if not using render.yaml):
-```
-web: uvicorn api:app --host 0.0.0.0 --port $PORT
-```
-
-### 3. Build Settings on Render
+### A. Service Configuration
 
 | Setting | Value |
 |---|---|
-| Environment | Python 3 |
 | Root Directory | `backend` |
 | Build Command | `pip install -r requirements.txt` |
 | Start Command | `uvicorn api:app --host 0.0.0.0 --port $PORT` |
 
-### 4. Environment Variables
+### B. Railway Environment
 
-| Variable | Value |
+- Set Python runtime to 3.11.
+- Ensure required data files are mounted or bundled.
+
+## 4. Frontend Deployment (Vercel)
+
+### A. Project Settings
+
+| Setting | Value |
 |---|---|
-| `PYTHON_VERSION` | `3.11` |
-| `PORT` | `8000` (auto-set by Render) |
+| Framework Preset | Vite |
+| Root Directory | `frontend` |
+| Install Command | `npm install` |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
 
-### 5. Deploy Steps
+### B. Required Environment Variables
 
-```bash
-# Option A: Render Dashboard
-# 1. Create "New Web Service" on render.com
-# 2. Connect your GitHub repo
-# 3. Set root directory to backend
-# 4. Set build and start commands
-# 5. Deploy
+| Variable | Example |
+|---|---|
+| `VITE_API_URL` | `https://your-backend-service.onrender.com` |
+| `VITE_SUPABASE_URL` | `https://your-project-id.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | `your-supabase-anon-key` |
 
-# Option B: render.yaml (auto-deploy)
-# Push code with render.yaml to trigger deploy
+Important: Vite requires env names prefixed with `VITE_`.
+
+## 5. Supabase Project Setup
+
+1. Create project at `https://supabase.com`.
+2. Copy project URL and anon key.
+3. Run SQL shown above in SQL Editor.
+4. In Auth settings, enable Email/Password provider.
+5. Add your Vercel domain under allowed redirect/site URLs if needed by your auth policy.
+
+## 6. Production CORS and Security
+
+In production, avoid wildcard CORS. Update allow list in backend to include only trusted frontend domains.
+
+Current backend CORS is permissive for development; tighten it before production.
+
+## 7. End-to-End Production Validation
+
+Run these checks after both deployments:
+
+1. Backend health endpoint responds.
+2. Frontend loads and can reach backend.
+3. Login and signup succeed through Supabase.
+4. Query to `/ask` returns response.
+5. Chat row is inserted into `chat_history`.
+6. Browser refresh reloads chat history.
+7. Clear Chat removes user history rows.
+8. `/predict` and `/interaction` return expected outputs.
+
+## 8. Useful Commands
+
+Backend local production-like start:
+
+```powershell
+cd backend
+..\.venv\Scripts\python.exe -m uvicorn api:app --host 0.0.0.0 --port 10000
 ```
 
----
+Frontend local build verification:
 
-## Important Notes
-
-> ⚠️ **Large Model Files**: The FAISS index and ML models are large.
-> Render's free tier has limited storage. Consider:
-> - Using a smaller model variant
-> - Loading models from a remote storage (S3/GCS)
-> - Using Render's paid tier
-
-> ⚠️ **Cold Starts**: Free tier services spin down after inactivity.
-> First request may take 30-60 seconds as models load.
-
-> ⚠️ **CORS**: Update `allow_origins` in `api.py` to your Vercel domain
-> for production (instead of `"*"`).
-
----
-
-## Post-Deployment Checklist
-
-- [ ] Backend `/health` endpoint returns `{"status":"ok"}`
-- [ ] Frontend loads and shows chat UI
-- [ ] Frontend can send queries and receive responses
-- [ ] Role selector works
-- [ ] All tool queries work (BP, drug interaction, risk)
-- [ ] Chat history persists within session
-- [ ] CORS headers present in responses
+```powershell
+cd frontend
+npm run build
+```

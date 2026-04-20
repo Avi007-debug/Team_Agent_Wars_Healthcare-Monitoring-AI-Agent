@@ -1,121 +1,114 @@
 # Testing Instructions — AI Medical Assistant
 
-## Prerequisites
+## 0. Start With Venv (Required)
 
-1. **Backend running** at `http://127.0.0.1:8000`
-2. **Frontend running** at `http://localhost:5173`
+From repo root:
 
-### Start Backend
-```bash
-cd backend
-python -m uvicorn api:app --reload --host 127.0.0.1 --port 8000
+```powershell
+cd Team_Agent_Wars_Healthcare-Monitoring-AI-Agent
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-### Start Frontend
-```bash
+Then install backend deps:
+
+```powershell
+cd backend
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+## 1. Run Backend First
+
+From repo root (recommended command):
+
+```powershell
+cd backend
+..\.venv\Scripts\python.exe -m uvicorn api:app --reload --host 127.0.0.1 --port 8000
+```
+
+Keep this terminal running.
+
+## 2. Run Frontend
+
+Open a second terminal from repo root:
+
+```powershell
 cd frontend
+npm install
 npm run dev
 ```
 
----
+Set `frontend/.env` before testing auth/history:
 
-## 1. Health Check
-
-```bash
-curl http://127.0.0.1:8000/health
-```
-✅ Expected: `{"status":"ok"}`
-
----
-
-## 2. CORS Verification
-
-```bash
-curl -H "Origin: http://localhost:5173" -v http://127.0.0.1:8000/health 2>&1 | findstr "Access-Control"
-```
-✅ Expected: `Access-Control-Allow-Origin: *`
-
----
-
-## 3. RAG Queries (via UI or curl)
-
-| Query | Expected behavior |
-|---|---|
-| `symptoms of diabetes` | Returns symptoms from disease dataset |
-| `side effects of aspirin` | Returns drug side effects |
-| `nutrition in rice` | Returns nutrition data |
-| `covid prevention` | Returns guideline info |
-| `treatment for hypertension` | Returns treatment information |
-
-```bash
-curl -X POST http://127.0.0.1:8000/ask -H "Content-Type: application/json" -d "{\"query\":\"symptoms of diabetes\",\"role\":\"user\"}"
-```
-✅ Expected: `{"response": "🩺 Medical Answer:...", "role": "user"}`
-
----
-
-## 4. Tool Queries
-
-| Query | Tool triggered |
-|---|---|
-| `bp 160` | Health predictor + alerts |
-| `drug interaction aspirin ibuprofen` | Drug interaction checker |
-| `risk age 55 bp 160` | Risk predictor + alerts |
-| `remind me to take aspirin at 8am` | Reminder tool |
-
-```bash
-curl -X POST http://127.0.0.1:8000/ask -H "Content-Type: application/json" -d "{\"query\":\"drug interaction aspirin ibuprofen\",\"role\":\"user\"}"
+```env
+VITE_API_URL=http://127.0.0.1:8000
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
----
+## 3. Backend Endpoint Checks
 
-## 5. Role System
+Use PowerShell-native requests:
 
-```bash
-# As user
-curl -X POST http://127.0.0.1:8000/ask -H "Content-Type: application/json" -d "{\"query\":\"symptoms of diabetes\",\"role\":\"user\"}"
-
-# As doctor
-curl -X POST http://127.0.0.1:8000/ask -H "Content-Type: application/json" -d "{\"query\":\"symptoms of diabetes\",\"role\":\"doctor\"}"
+```powershell
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/health" -Method Get | ConvertTo-Json -Compress
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/ask" -Method Post -ContentType "application/json" -Body (@{ query = "symptoms of diabetes"; role = "user" } | ConvertTo-Json -Compress) | ConvertTo-Json -Compress
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/predict" -Method Post -ContentType "application/json" -Body (@{ age = 55; bp = 160 } | ConvertTo-Json -Compress) | ConvertTo-Json -Compress
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/interaction" -Method Post -ContentType "application/json" -Body (@{ drug1 = "aspirin"; drug2 = "ibuprofen" } | ConvertTo-Json -Compress) | ConvertTo-Json -Compress
 ```
-✅ Expected: Both return valid responses with `"role"` field in output
 
----
+Expected:
 
-## 6. Chat History
+- `GET /health`: `{ "status": "ok" }`
+- `POST /ask`: JSON with `response`
+- `POST /predict`: JSON with `prediction`
+- `POST /interaction`: JSON with `interaction`
 
-```bash
-# Get history
-curl http://127.0.0.1:8000/history
+## 4. Supabase Persistence Prerequisite
 
-# Clear history
-curl -X DELETE http://127.0.0.1:8000/history
+In Supabase SQL editor, run:
+
+```sql
+create extension if not exists "uuid-ossp";
+
+create table if not exists chat_history (
+	id uuid default uuid_generate_v4() primary key,
+	user_id text,
+	query text,
+	response text,
+	created_at timestamp default now()
+);
 ```
-✅ Expected: Returns list of past messages / clears them
 
----
+## 5. End-to-End Flow Test
 
-## 7. Edge Cases
+1. Open frontend (`http://localhost:5173`) and go to `/chat`.
+2. Sign up (or log in) with email/password.
+3. Ask a query and verify assistant response appears.
+4. Refresh browser.
+5. Confirm previous messages load from Supabase `chat_history`.
+6. Click Clear Chat and verify old messages disappear.
+7. Log out and confirm chat area returns to login panel.
 
-| Input | Expected |
-|---|---|
-| _(empty)_ | "Please enter a medical question..." |
-| `hi` | "No relevant medical information found." |
-| `asdfghjkl` | "No relevant medical information found." |
-| `what about treatment?` (follow-up) | Uses conversation context |
+## 6. Regression Checklist
 
----
+- [ ] Login works
+- [ ] Signup works
+- [ ] Logout works
+- [ ] Chat save works
+- [ ] History load works after refresh
+- [ ] Clear chat removes user records
+- [ ] `/ask` works for medical/rag queries
+- [ ] `/predict` returns risk output
+- [ ] `/interaction` returns interaction output
 
-## 8. Frontend UI Checklist
+## 7. Optional Automated Test Runs
 
-- [ ] Page loads with dark theme and welcome screen
-- [ ] Welcome chips are clickable and send queries
-- [ ] Messages appear with slide-in animation
-- [ ] Typing indicator shows during loading
-- [ ] Auto-scrolls to latest message
-- [ ] Role selector switches between User/Doctor
-- [ ] Quick query presets work from sidebar
-- [ ] Clear button clears chat
-- [ ] Enter key sends message
-- [ ] Empty input is disabled (send button grayed)
-- [ ] Error message shown if backend is down
+From `backend/` (with venv active):
+
+```powershell
+python test_agent.py
+python test_retrieval.py
+python tests/test_api.py
+```

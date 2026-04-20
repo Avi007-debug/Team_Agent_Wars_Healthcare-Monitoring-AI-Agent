@@ -97,6 +97,28 @@ npm install
 npm run dev
 ```
 
+Create `frontend/.env` from `frontend/.env.example` and set:
+
+```powershell
+VITE_API_URL=http://127.0.0.1:8000
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+Create Supabase table in SQL editor:
+
+```sql
+create extension if not exists "uuid-ossp";
+
+create table if not exists chat_history (
+  id uuid default uuid_generate_v4() primary key,
+  user_id text,
+  query text,
+  response text,
+  created_at timestamp default now()
+);
+```
+
 Main frontend (3-page app) routes:
 
 - `/` Home

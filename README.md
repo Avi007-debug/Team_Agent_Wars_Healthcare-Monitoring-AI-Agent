@@ -267,6 +267,14 @@ npm install
 npm run dev
 ```
 
+Frontend env setup (copy from `.env.example`):
+
+```bash
+VITE_API_URL=http://127.0.0.1:8000
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
 Main routes:
 
 - `/` Home
@@ -303,6 +311,11 @@ npm run dev
 - `GET /history`
 - `DELETE /history`
 
+Additional auth and persistence stack:
+
+- Supabase Auth (email/password)
+- Supabase table `chat_history` for chat persistence
+
 Sample `/ask` payload:
 
 ```json
@@ -318,6 +331,97 @@ Sample `/ask` payload:
 
 This system is for educational and informational purposes only.
 It is not a substitute for professional medical advice, diagnosis, or treatment.
+
+---
+
+## 🗄️ Supabase Setup (Frontend Auth + Chat Persistence)
+
+1. Create a Supabase project at https://supabase.com
+2. Save project values:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+3. Run this SQL in Supabase SQL editor:
+
+```sql
+create extension if not exists "uuid-ossp";
+
+create table if not exists chat_history (
+    id uuid default uuid_generate_v4() primary key,
+    user_id text,
+    query text,
+    response text,
+    created_at timestamp default now()
+);
+```
+
+4. Add frontend env vars in `frontend/.env` and restart Vite.
+
+Optional: use prepared SQL file at `backend/docs/supabase_chat_history.sql`.
+
+Current frontend enhancements:
+
+- Login/Signup (email/password)
+- Logout
+- Save each `/ask` response to Supabase table
+- Load previous history after login
+- Clear chat button (also clears user history from Supabase)
+- Loading indicators and inline error messages
+
+---
+
+## ✅ Backend Health Check
+
+Run backend:
+
+```bash
+cd backend
+uvicorn api:app --reload
+```
+
+Verify endpoints:
+
+- `/ask`
+- `/predict`
+- `/interaction`
+
+---
+
+## 🌐 Deployment Notes
+
+### Backend (Render / Railway)
+
+Start command:
+
+```bash
+uvicorn api:app --host 0.0.0.0 --port 10000
+```
+
+### Frontend (Vercel)
+
+Set env vars:
+
+- `VITE_API_URL`
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+---
+
+## 🧪 End-to-End Test Flow
+
+1. Sign up or log in
+2. Ask a medical query
+3. Confirm response appears
+4. Reload page
+5. Confirm previous chats load from Supabase
+6. Click Clear Chat and confirm history is removed
+
+Detailed test checklist is available in `TESTING.md`.
+
+---
+
+## 📦 Full Deployment Guide
+
+Complete Render/Railway + Vercel deployment instructions are documented in `DEPLOYMENT.md`.
 
 ---
 

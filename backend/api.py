@@ -3,9 +3,33 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime, timezone
 
-from agent.medical_agent import medical_agent
-from tools.drug_interaction_tool import check_drug_interaction
-from tools.health_predictor import predict_health_risk
+medical_agent = None
+check_drug_interaction = None
+predict_health_risk = None
+
+
+def load_medical_agent():
+	global medical_agent
+	if medical_agent is None:
+		from agent.medical_agent import medical_agent as ma
+		medical_agent = ma
+	return medical_agent
+
+
+def load_drug_tool():
+	global check_drug_interaction
+	if check_drug_interaction is None:
+		from tools.drug_interaction_tool import check_drug_interaction as cdi
+		check_drug_interaction = cdi
+	return check_drug_interaction
+
+
+def load_predictor():
+	global predict_health_risk
+	if predict_health_risk is None:
+		from tools.health_predictor import predict_health_risk as phr
+		predict_health_risk = phr
+	return predict_health_risk
 
 app = FastAPI(title="AI Medical Assistant API", version="2.0.0")
 
@@ -46,8 +70,9 @@ def health_check():
 
 @app.post("/ask")
 def ask(req: QueryRequest):
+	agent = load_medical_agent()
 	memory = [{"user": m["user"], "assistant": m["bot"]} for m in chat_history[-12:]]
-	response = medical_agent(req.query, conversation_memory=memory)
+	response = agent(req.query, conversation_memory=memory)
 
 	chat_history.append({
 		"user": req.query,
@@ -72,11 +97,13 @@ def clear_history():
 
 @app.post("/predict")
 def predict(req: PredictRequest):
-	result = predict_health_risk(req.age, req.bp)
+	predictor = load_predictor()
+	result = predictor(req.age, req.bp)
 	return {"prediction": result}
 
 
 @app.post("/interaction")
 def interaction(req: InteractionRequest):
-	result = check_drug_interaction(req.drug1, req.drug2)
+	tool = load_drug_tool()
+	result = tool(req.drug1, req.drug2)
 	return {"interaction": result}

@@ -2,8 +2,17 @@ import re
 
 from tools.drug_interaction_tool import check_drug_interaction
 from tools.alert_system import generate_alerts
-from tools.health_predictor import predict_health_risk
 from tools.reminder_tool import set_reminder
+
+predict_health_risk = None
+
+
+def get_predictor():
+	global predict_health_risk
+	if predict_health_risk is None:
+		from tools.health_predictor import predict_health_risk as phr
+		predict_health_risk = phr
+	return predict_health_risk
 
 
 GENERIC_ENTITY_WORDS = {
@@ -111,7 +120,7 @@ def tool_agent(query):
 				return "For risk check, include age and blood pressure. Example: age 52 blood pressure 150."
 
 		heart_rate = _extract_heart_rate(q)
-		prediction = predict_health_risk(age, blood_pressure)
+		prediction = get_predictor()(age, blood_pressure)
 		alerts = generate_alerts(blood_pressure, heart_rate)
 
 		return f"{prediction}\n\nAlerts:\n" + "\n".join(alerts)
@@ -126,7 +135,7 @@ def tool_agent(query):
 			return "For blood pressure checks, include BP value. Example: bp 150 or age 45 bp 150."
 
 		heart_rate = _extract_heart_rate(q)
-		prediction = predict_health_risk(age, blood_pressure)
+		prediction = get_predictor()(age, blood_pressure)
 		alerts = generate_alerts(blood_pressure, heart_rate)
 
 		return f"{prediction}\n\nAlerts:\n" + "\n".join(alerts)

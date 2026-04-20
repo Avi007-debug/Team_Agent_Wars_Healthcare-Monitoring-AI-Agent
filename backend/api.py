@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime, timezone
+import os
 
 medical_agent = None
 check_drug_interaction = None
@@ -33,10 +34,24 @@ def load_predictor():
 
 app = FastAPI(title="AI Medical Assistant API", version="2.0.0")
 
+
+def _get_allowed_origins() -> list[str]:
+	configured = os.getenv("CORS_ALLOW_ORIGINS", "")
+	if configured.strip():
+		return [o.strip() for o in configured.split(",") if o.strip()]
+
+	return [
+		"http://localhost:5173",
+		"http://127.0.0.1:5173",
+		"https://team-agent-wars-healthcare-monitori.vercel.app",
+	]
+
+
 # --------------- CORS ---------------
 app.add_middleware(
 	CORSMiddleware,
-	allow_origins=["*"],
+	allow_origins=_get_allowed_origins(),
+	allow_origin_regex=r"https://.*\.vercel\.app",
 	allow_credentials=True,
 	allow_methods=["*"],
 	allow_headers=["*"],

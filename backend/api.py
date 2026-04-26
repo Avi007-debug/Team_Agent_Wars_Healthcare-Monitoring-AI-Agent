@@ -62,10 +62,6 @@ def startup_event():
 	# 1. Download resources if missing (works locally & on Render)
 	download_file(FAISS_URL, FAISS_PATH)
 	download_file(DATA_URL, DATA_PATH)
-	
-	# 2. Trigger background warmup of heavy models
-	from retrieval.hybrid_retriever import warmup_models
-	threading.Thread(target=warmup_models, daemon=True).start()
 
 def _get_allowed_origins() -> list[str]:
 	configured = os.getenv("CORS_ALLOW_ORIGINS", "")
@@ -239,4 +235,8 @@ def interaction(req: InteractionRequest):
 
 @app.get("/")
 def health():
+    return {"status": "ok"}
+
+@app.head("/")
+def health_head():
     return {"status": "ok"}

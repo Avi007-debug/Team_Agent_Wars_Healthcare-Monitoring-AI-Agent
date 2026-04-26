@@ -4,70 +4,80 @@ from pathlib import Path
 import faiss
 import numpy as np
 import re
-from sentence_transformers import SentenceTransformer
+
+# We will lazy-load sentence_transformers to speed up import and fast-boot
+# from sentence_transformers import SentenceTransformer
+# from sentence_transformers import CrossEncoder
 from rank_bm25 import BM25Okapi
-
-# ------------------- NEW FEATURE -------------------
-# Cross Encoder Reranker
-from sentence_transformers import CrossEncoder
-# ---------------------------------------------------
-
-print("Loading embedding model...")
-model = SentenceTransformer("all-MiniLM-L6-v2")
-
-# ------------------- NEW FEATURE -------------------
-print("Loading cross-encoder reranker...")
-reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
-# ---------------------------------------------------
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 INDEX_PATH = BASE_DIR / "medical_vector_db.faiss"
 DATASET_PATH = BASE_DIR / "medical_rag_dataset.json"
 
-print("Loading FAISS index...")
-index = faiss.read_index(str(INDEX_PATH))
+_embedding_model = None
+_reranker = None
+_index = None
+_data = None
+_entity_index = None
+_bm25 = None
+_corpus = None
 
-print("Loading dataset...")
-with open(DATASET_PATH, "r", encoding="utf-8") as f:
-	data = json.load(f)
+def get_embedding_model():
+	global _embedding_model
+	if _embedding_model is None:
+		print("⚡ Loading embedding model...")
+		from sentence_transformers import SentenceTransformer
+		_embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+	return _embedding_model
 
-print("Total documents:", len(data))
+def get_reranker():
+	global _reranker
+	if _reranker is None:
+		print("⚡ Loading cross-encoder reranker...")
+		from sentence_transformers import CrossEncoder
+		_reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+	return _reranker
 
+def get_data_and_indices():
+	global _index, _data, _entity_index, _bm25, _corpus
+	if _index is None:
+		print("🚀 Loading core FAISS index & dataset...")
+		_index = faiss.read_index(str(INDEX_PATH))
 
-# ---------------------------------------------------
-# Build ENTITY INDEX
-# ---------------------------------------------------
+		with open(DATASET_PATH, "r", encoding="utf-8") as f:
+			_data = json.load(f)
 
-print("Building entity index...")
+		print(f"✅ Loaded dataset: {len(_data)} docs")
 
-entity_index = {}
+		print("🚀 Building entity index...")
+		_entity_index = {}
+		for i, doc in enumerate(_data):
+			name = doc.get("name", "").lower()
+			if name:
+				_entity_index.setdefault(name, []).append(i)
 
-for i, doc in enumerate(data):
+		print("🚀 Building BM25 index...")
+		_corpus = []
+		for doc in _data:
+			text = doc["text"]
+			name = doc.get("name", "")
+			combined = name + " " + text
+			_corpus.append(tokenize(combined))
+		
+		_bm25 = BM25Okapi(_corpus)
+		print("✅ Core loading complete.")
 
-	name = doc.get("name", "").lower()
+	return _index, _data, _entity_index, _bm25
 
-	if name:
-		entity_index.setdefault(name, []).append(i)
-
-
-# ---------------------------------------------------
-# Build BM25 corpus
-# ---------------------------------------------------
-
-print("Building BM25 index...")
+def warmup_models():
+	print("🔥 Warming up models & indexes...")
+	get_data_and_indices()
+	get_embedding_model()
+	get_reranker()
+	print("🔥 Warmup complete")
 
 def tokenize(text):
 	return re.findall(r"\b[a-zA-Z]{3,}\b", text.lower())
-
-corpus = []
-
-for doc in data:
-	text = doc["text"]
-	name = doc.get("name", "")
-	combined = name + " " + text
-	corpus.append(tokenize(combined))
-
-bm25 = BM25Okapi(corpus)
 
 
 # ---------------------------------------------------
@@ -137,7 +147,7 @@ def detect_section(query):
 # Entity detection
 # ---------------------------------------------------
 
-def detect_entity(query):
+def detect_entity(query, entity_idx):
 
 	q = query.lower()
 	q_terms = set(re.findall(r"[a-z0-9]+", q))
@@ -154,7 +164,7 @@ def detect_entity(query):
 	best_name = None
 	best_overlap = 0
 
-	for name in entity_index.keys():
+	for name in entity_idx.keys():
 
 		if name in q:
 			return name
@@ -217,6 +227,11 @@ def retrieve(query, k=5):
 	print("[LOG] Query:", query)
 	start = time.time()
 
+	# Lazy load
+	idx, dat, ent_idx, b25 = get_data_and_indices()
+	embed_model = get_embedding_model()
+	rank_model = get_reranker()
+
 	domain_priority = {
 		"drug": 4,
 		"disease": 3,
@@ -232,21 +247,21 @@ def retrieve(query, k=5):
 
 	section_priority = detect_section(query)
 
-	entity = detect_entity(query)
+	entity = detect_entity(query, ent_idx)
 
 	# ---------------------------------------------------
 	# ENTITY FILTER (perfect retrieval)
 	# ---------------------------------------------------
 
-	if entity and entity in entity_index:
+	if entity and entity in ent_idx:
 
-		indices = entity_index[entity]
+		indices = ent_idx[entity]
 
 		results = []
 
-		for idx in indices:
+		for p_idx in indices:
 
-			doc = data[idx]
+			doc = dat[p_idx]
 			doc_type = doc.get("type", "").lower()
 
 			if domain and doc_type != domain:
@@ -282,7 +297,7 @@ def retrieve(query, k=5):
 
 	token_query = tokenize(query)
 
-	bm25_scores = bm25.get_scores(token_query)
+	bm25_scores = b25.get_scores(token_query)
 
 	bm25_top = np.argsort(bm25_scores)[-100:]
 
@@ -291,10 +306,10 @@ def retrieve(query, k=5):
 	# FAISS search
 	# ---------------------------------------------------
 
-	query_embedding = model.encode([query])
+	query_embedding = embed_model.encode([query])
 	query_embedding = np.array(query_embedding).astype("float32")
 
-	D, I = index.search(query_embedding, 100)
+	D, I = idx.search(query_embedding, 100)
 
 	faiss_indices = I[0]
 
@@ -307,9 +322,9 @@ def retrieve(query, k=5):
 
 	candidates = []
 
-	for idx in candidate_indices:
+	for c_idx in candidate_indices:
 
-		doc = data[idx]
+		doc = dat[c_idx]
 
 		text = doc["text"].lower()
 
@@ -327,13 +342,13 @@ def retrieve(query, k=5):
 
 
 		# BM25 score
-		score += bm25_scores[idx] * 2
+		score += bm25_scores[c_idx] * 2
 
 
 		# vector similarity
-		if idx in faiss_indices:
+		if c_idx in faiss_indices:
 
-			pos = list(faiss_indices).index(idx)
+			pos = list(faiss_indices).index(c_idx)
 
 			distance = D[0][pos]
 
@@ -385,7 +400,7 @@ def retrieve(query, k=5):
 
 	pairs = [(query, doc["text"]) for doc in top_candidates]
 
-	scores = reranker.predict(pairs)
+	scores = rank_model.predict(pairs)
 
 	reranked = sorted(zip(scores, top_candidates), key=lambda x: x[0], reverse=True)
 

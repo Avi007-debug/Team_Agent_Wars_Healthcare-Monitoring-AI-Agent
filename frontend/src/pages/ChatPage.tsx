@@ -38,7 +38,6 @@ export default function ChatPage() {
   const [role, setRole] = useState('user');
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [saveLoading, setSaveLoading] = useState(false);
   const [chatError, setChatError] = useState('');
   const [toastMessage, setToastMessage] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
@@ -131,7 +130,7 @@ export default function ChatPage() {
       const res = await fetch(`${API_URL}/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: q, role }),
+        body: JSON.stringify({ query: q, role, user_id: user?.id }),
       });
 
       if (!res.ok) {
@@ -147,42 +146,11 @@ export default function ChatPage() {
       const createdAt = new Date().toISOString();
       const responseText = rawResponse;
 
-      setSaveLoading(true);
-      console.log("Inserting chat...");
-      
-      // Safety timeout in case Postgres is deadlocked (e.g. uncommitted transaction in SQL editor)
-      const insertPromise = supabase.from('chat_history').insert({
-        query: q,
-        response: responseText,
-      });
-      
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Supabase insert timed out after 10 seconds. Check for Postgres locks!")), 10000)
-      );
-
-      const { error: insertError } = await Promise.race([insertPromise, timeoutPromise]) as any;
-      
-      console.log("Insert finished. Error:", insertError);
-      setSaveLoading(false);
-
-      if (insertError) {
-        if (insertError.code === '42501') {
-          const msg = 'Response shown, but save failed: chat_history RLS policy is blocking inserts for this user.';
-          setChatError(msg);
-          setToastMessage(msg);
-        } else {
-          const msg = `Response shown, but save failed: ${insertError.message}`;
-          setChatError(msg);
-          setToastMessage(msg);
-        }
-      }
-
       setMessages((prev) => [
         ...prev,
         { user: q, bot: responseText, role, createdAt },
       ]);
     } catch (err: any) {
-      setSaveLoading(false);
       const message = String(err?.message || 'Unknown fetch error');
       const fetchFailed = message.toLowerCase().includes('no response') || message.toLowerCase().includes('fetch failed');
       const botMessage = fetchFailed
@@ -274,18 +242,12 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {(authError || chatError || historyLoading || saveLoading) && (
+        {(authError || chatError || historyLoading) && (
           <div className="px-6 py-3 border-b border-border text-xs">
             {historyLoading && (
               <span className="inline-flex items-center gap-2 text-muted-foreground mr-4">
                 <Loader2 size={12} className="animate-spin" />
                 Loading history...
-              </span>
-            )}
-            {saveLoading && (
-              <span className="inline-flex items-center gap-2 text-muted-foreground mr-4">
-                <Loader2 size={12} className="animate-spin" />
-                Saving chat...
               </span>
             )}
             {authError && <span className="text-danger mr-4">{authError}</span>}
@@ -373,7 +335,7 @@ export default function ChatPage() {
             </motion.button>
             <button
               onClick={clearChat}
-              disabled={loading || historyLoading || saveLoading || messages.length === 0}
+              disabled={loading || historyLoading || messages.length === 0}
               className="px-3 py-2 rounded-xl border border-border text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 disabled:opacity-35 disabled:cursor-not-allowed"
             >
               Clear Chat

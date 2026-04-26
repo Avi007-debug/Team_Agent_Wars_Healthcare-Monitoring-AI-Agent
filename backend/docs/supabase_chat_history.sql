@@ -69,7 +69,7 @@ with check (id = auth.uid());
 
 create table if not exists chat_history (
   id uuid primary key default uuid_generate_v4(),
-  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
   query text not null,
   response text not null,
   created_at timestamptz not null default now()

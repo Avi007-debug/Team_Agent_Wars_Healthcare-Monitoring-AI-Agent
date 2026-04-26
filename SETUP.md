@@ -72,6 +72,7 @@ From repository root:
 ```powershell
 cd backend
 ..\.venv\Scripts\python.exe -m uvicorn api:app --reload
+ or python -m uvicorn api:app --reload
 ```
 
 Open Swagger UI:

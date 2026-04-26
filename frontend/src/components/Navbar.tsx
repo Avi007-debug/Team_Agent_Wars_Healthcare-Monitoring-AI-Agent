@@ -1,18 +1,35 @@
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, MessageSquare, Info, Menu, X, Sun, Moon } from 'lucide-react';
+import { House, MessageSquare, LogIn, UserPlus, LogOut, Menu, X, Sun, Moon } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
-const links = [
-  { to: '/', label: 'Home', icon: Activity },
+const loggedInLinks = [
+  { to: '/', label: 'Home', icon: House },
   { to: '/chat', label: 'Chat', icon: MessageSquare },
-  { to: '/about', label: 'About', icon: Info },
+];
+
+const loggedOutLinks = [
+  { to: '/', label: 'Home', icon: House },
+  { to: '/login', label: 'Login', icon: LogIn },
+  { to: '/signup', label: 'Signup', icon: UserPlus },
 ];
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const { theme, toggle } = useTheme();
+  const { user, logout } = useAuth();
+  const links = user ? loggedInLinks : loggedOutLinks;
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      // AuthContext already handles user-facing errors.
+    }
+    setOpen(false);
+  };
 
   return (
     <motion.nav
@@ -39,7 +56,6 @@ export default function Navbar() {
           <NavLink
             key={l.to}
             to={l.to}
-            end={l.to === '/'}
             className={({ isActive }) =>
               `flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                 isActive
@@ -52,6 +68,16 @@ export default function Navbar() {
             {l.label}
           </NavLink>
         ))}
+
+        {user && (
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all duration-200"
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
+        )}
 
         {/* Theme toggle */}
         <motion.button
@@ -95,7 +121,7 @@ export default function Navbar() {
             className="absolute top-full left-0 right-0 glass-strong rounded-b-2xl p-4 flex flex-col gap-1 md:hidden"
           >
             {links.map((l) => (
-              <NavLink key={l.to} to={l.to} end={l.to === '/'} onClick={() => setOpen(false)}
+              <NavLink key={l.to} to={l.to} onClick={() => setOpen(false)}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                     isActive ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
@@ -106,6 +132,16 @@ export default function Navbar() {
                 {l.label}
               </NavLink>
             ))}
+
+            {user && (
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
+              >
+                <LogOut size={18} />
+                Logout
+              </button>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

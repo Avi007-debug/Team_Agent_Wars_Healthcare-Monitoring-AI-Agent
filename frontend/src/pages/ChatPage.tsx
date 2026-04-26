@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Mic, Loader2 } from 'lucide-react';
 import ChatMessage from '../components/ChatMessage';
@@ -43,6 +43,8 @@ export default function ChatPage() {
   const [toastMessage, setToastMessage] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const hasFetched = useRef(false);
+  const isSendingRef = useRef(false);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -54,55 +56,73 @@ export default function ChatPage() {
     return () => window.clearTimeout(timer);
   }, [toastMessage]);
 
-  const loadHistory = useCallback(async (userId: string) => {
-    setHistoryLoading(true);
-    setChatError('');
-
-    const { data, error } = await supabase
-      .from('chat_history')
-      .select('query, response, created_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      if (error.code === 'PGRST116' || error.code === '42501') {
-        const msg = 'Unable to load history due to missing permissions. Check chat_history RLS policies.';
-        setChatError(msg);
-        setToastMessage(msg);
-      } else {
-        const msg = `Unable to load history: ${error.message}`;
-        setChatError(msg);
-        setToastMessage(msg);
-      }
+  const loadHistory = useCallback(async (currentSession: any) => {
+    if (!currentSession) {
       setHistoryLoading(false);
       return;
     }
 
-    const rows = (data as ChatHistoryRow[] | null) ?? [];
-    setMessages(rows.map((row) => ({
-      user: row.query,
-      bot: row.response,
-      role: 'user',
-      createdAt: row.created_at ?? '',
-    })));
+    console.log("Fetching chats...");
+    setHistoryLoading(true);
+    setChatError('');
 
-    setHistoryLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from('chat_history')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      console.log("Chats:", data);
+      console.log("Error:", error);
+
+      if (error) {
+        if (error.code === 'PGRST116' || error.code === '42501') {
+          const msg = 'Unable to load history due to missing permissions. Check chat_history RLS policies.';
+          setChatError(msg);
+          setToastMessage(msg);
+        } else {
+          const msg = `Unable to load history: ${error.message}`;
+          setChatError(msg);
+          setToastMessage(msg);
+        }
+        setHistoryLoading(false);
+        return;
+      }
+
+      const rows = (data as ChatHistoryRow[] | null) ?? [];
+      setMessages(rows.map((row) => ({
+        user: row.query,
+        bot: row.response,
+        role: 'user',
+        createdAt: row.created_at ?? '',
+      })));
+    } catch (err: any) {
+      console.error("Raw error loading history:", err);
+      const msg = `Exception loading history: ${err.message || 'Unknown error'}`;
+      setChatError(msg);
+      setToastMessage(msg);
+    } finally {
+      setHistoryLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    if (!user?.id) {
-      setMessages([]);
+    if (user && !hasFetched.current) {
+      hasFetched.current = true;
+      loadHistory(user);
+    }
+  }, [user, loadHistory]);
+
+  const sendQuery = useCallback(async (text?: string) => {
+    if (isSendingRef.current) {
+      console.log("Blocked duplicate send");
       return;
     }
 
-    loadHistory(user.id);
-  }, [user?.id, loadHistory]);
-
-  const sendQuery = useCallback(async (text?: string) => {
-    const userId = user?.id;
     const q = (text || query).trim();
-    if (!q || loading || !userId) return;
+    if (!q) return;
 
+    isSendingRef.current = true;
     setChatError('');
     setLoading(true);
     setQuery('');
@@ -127,19 +147,22 @@ export default function ChatPage() {
       const createdAt = new Date().toISOString();
       const responseText = rawResponse;
 
-      setMessages((prev) => [
-        ...prev,
-        { user: q, bot: responseText, role, createdAt },
-      ]);
-
       setSaveLoading(true);
-      const { error: insertError } = await supabase.from('chat_history').insert([
-        {
-          user_id: userId,
-          query: q,
-          response: responseText,
-        },
-      ]);
+      console.log("Inserting chat...");
+      
+      // Safety timeout in case Postgres is deadlocked (e.g. uncommitted transaction in SQL editor)
+      const insertPromise = supabase.from('chat_history').insert({
+        query: q,
+        response: responseText,
+      });
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Supabase insert timed out after 10 seconds. Check for Postgres locks!")), 10000)
+      );
+
+      const { error: insertError } = await Promise.race([insertPromise, timeoutPromise]) as any;
+      
+      console.log("Insert finished. Error:", insertError);
       setSaveLoading(false);
 
       if (insertError) {
@@ -153,6 +176,11 @@ export default function ChatPage() {
           setToastMessage(msg);
         }
       }
+
+      setMessages((prev) => [
+        ...prev,
+        { user: q, bot: responseText, role, createdAt },
+      ]);
     } catch (err: any) {
       setSaveLoading(false);
       const message = String(err?.message || 'Unknown fetch error');
@@ -176,36 +204,36 @@ export default function ChatPage() {
         },
       ]);
     } finally {
+      isSendingRef.current = false;
       setLoading(false);
       inputRef.current?.focus();
     }
-  }, [query, loading, role, user?.id]);
+  }, [query, role]);
 
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendQuery();
+      if (!isSendingRef.current) {
+        sendQuery();
+      }
     }
   };
 
   const clearChat = useCallback(async () => {
-    const userId = user?.id;
     setMessages([]);
     setChatError('');
-
-    if (!userId) return;
 
     const { error } = await supabase
       .from('chat_history')
       .delete()
-      .eq('user_id', userId);
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all user's chats (RLS protects others)
 
     if (error) {
       const msg = `Unable to clear history: ${error.message}`;
       setChatError(msg);
       setToastMessage(msg);
     }
-  }, [user?.id]);
+  }, []);
 
   return (
     <motion.div

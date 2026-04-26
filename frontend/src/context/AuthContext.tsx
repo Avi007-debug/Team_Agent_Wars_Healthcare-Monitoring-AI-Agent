@@ -92,6 +92,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const activeSession = data.session;
       setSession(activeSession);
       setUser(activeSession?.user ?? null);
+      if (mounted) {
+        setLoading(false);
+      }
 
       if (activeSession?.user?.id) {
         try {
@@ -104,10 +107,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setAuthError(profileError.message || 'Unable to load profile.');
           }
         }
-      }
-
-      if (mounted) {
-        setLoading(false);
       }
     };
 
@@ -132,6 +131,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       manualSignOutRef.current = false;
+
+      if (mounted) {
+        setLoading(false);
+      }
 
       try {
         const profileData = await fetchProfile(nextSession.user.id);
@@ -165,10 +168,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(null);
           setAuthError(profileError.message || 'Unable to load profile.');
         }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
       }
     });
 
@@ -181,13 +180,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     setAuthError('');
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
 
     if (error) {
       throw error;
+    }
+
+    if (data?.user) {
+      const metadata = data.user.user_metadata;
+      if (metadata?.name || metadata?.phone) {
+        await supabase.from('profiles')
+          .update({ name: metadata.name, phone: metadata.phone })
+          .eq('id', data.user.id);
+      }
     }
   }, []);
 
@@ -236,17 +244,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw metadataError;
     }
 
-    const { error: profileError } = await supabase.from('profiles').upsert(
-      {
-        id: signedUpUser.id,
-        name: name.trim(),
-        phone: phone.trim(),
-      },
-      { onConflict: 'id' }
-    );
+    // B) After login/signup, run update to ensure profile is populated:
+    const { error: profileError } = await supabase.from('profiles')
+      .update({ name: name.trim(), phone: phone.trim() })
+      .eq('id', signedUpUser.id);
 
     if (profileError) {
-      throw profileError;
+      console.warn("Could not update profile immediately:", profileError);
     }
 
     await refreshProfile(signedUpUser.id);

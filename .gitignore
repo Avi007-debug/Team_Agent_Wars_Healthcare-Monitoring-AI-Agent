@@ -23,3 +23,4 @@
 /frontend/dist/
 /frontend/medical-frontend/dist/
 backend/.env
+frontend/.env

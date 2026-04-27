@@ -4,16 +4,26 @@
 
 ---
 
-## Repository Links
+## 🔗 Resources
 
-GitHub: https://github.com/Avi007-debug/Team_Agent_Wars_Healthcare-Monitoring-AI-Agent
-Updated RAG assets pack (latest datasets + vector files): https://drive.google.com/file/d/1Dz0GfoIwkxKhK2sKMLt44T-mq1O8JYYL/view?usp=sharing
-Backup/older complete RAG zip (datasets + final vector assets source): https://drive.google.com/file/d/1m-fUhmBdns8lD3BhdRqYpaclD7OXiSx/view?usp=sharing
+**GitHub Repository**  
+https://github.com/Avi007-debug/Team_Agent_Wars_Healthcare-Monitoring-AI-Agent  
 
-### Demo & Presentation
+**RAG Assets (Latest Dataset & Vectors)**  
+https://drive.google.com/file/d/1Dz0GfoIwkxKhK2sKMLt44T-mq1O8JYYL/view?usp=sharing  
 
-📹 **Demo Video**: https://youtu.be/3GJy49wlnkY
-📊 **Project PPT**: https://drive.google.com/file/d/1FV4gSIygPek2aHYVoCHdu3ld-7O3HFlv/view?usp=sharing
+**Backup Assets (Complete Pack)**  
+https://drive.google.com/file/d/1m-fUhmBdns8lD3BhdRqYpaclD7OXiSx/view?usp=sharing  
+
+---
+
+## 🎥 Demo & Presentation
+
+**Demo Video**  
+https://youtu.be/3GJy49wlnkY  
+
+**Project PPT**  
+https://drive.google.com/file/d/1FV4gSIygPek2aHYVoCHdu3ld-7O3HFlv/view?usp=sharing  
 
 ---
 

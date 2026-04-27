@@ -236,42 +236,7 @@ Latest recorded benchmark summary:
 
 ---
 
-## 📂 Project Structure (Current)
-
-```text
-Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/
-│
-├── backend/
-│   ├── api.py
-│   ├── requirements.txt
-│   ├── test_agent.py
-│   ├── test_retrieval.py
-│   ├── agent/
-│   ├── retrieval/
-│   ├── tools/
-│   ├── tests/
-│   ├── interface/
-│   ├── Scripts/
-│   ├── docs/
-│   ├── Datasets/
-│   ├── medical_rag_dataset.json
-│   └── medical_vector_db.faiss
-│
-├── frontend/
-│   ├── index.html
-│   ├── package.json
-│   ├── src/                  # main 3-page website frontend
-│   ├── public/               # logo + favicon + manifest assets
-│   └── medical-frontend/     # secondary/legacy UI
-│
-├── docs/
-├── SETUP.md
-├── TESTING.md
-├── DEPLOYMENT.md
-└── render.yaml
-```
-
-### Verified Repository Structure (Updated)
+## 📂 Project Structure (Verified)
 
 ```text
 Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/
@@ -311,7 +276,6 @@ Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/
 └── render.yaml
 ```
 
----
 ---
 
 ## ⚡ Installation

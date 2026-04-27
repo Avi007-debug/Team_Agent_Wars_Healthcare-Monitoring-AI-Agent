@@ -59,7 +59,7 @@ The assistant follows an agentic workflow where it can:
 - FastAPI backend with REST endpoints
 - React frontend with 3-page website (Home, Chat, About)
 - Role-aware requests (`user` / `doctor`)
-- Chat history endpoints (`/history` GET/DELETE)
+- Chat/history endpoints (`/history` GET, `/clear` DELETE)
 - Branding support (logo integration, favicon set, web manifest)
 
 ---
@@ -130,6 +130,14 @@ The system integrates multiple healthcare datasets:
 
 Note: source acquisition includes publicly available medical/open datasets and curated processing scripts in `backend/Scripts/`.
 
+### Official Dataset and Reference Links
+
+- OpenFDA Drug Label Dataset: https://open.fda.gov/data/drug/label/
+- Kaggle Disease-Symptom Description Dataset: https://www.kaggle.com/datasets/itachi9604/disease-symptom-description-dataset
+- USDA FoodData Central (official nutrition reference): https://fdc.nal.usda.gov/
+- WHO Health Topics and Guidelines: https://www.who.int/health-topics
+- CDC Health Topics and Guidance: https://www.cdc.gov/
+
 ---
 
 ## 📊 Dataset Statistics
@@ -151,6 +159,26 @@ Example RAG entry:
   "text": "Fluid retention, hypertension, muscle weakness may occur."
 }
 ```
+
+### Week-8 Snapshot
+
+- Raw chunks processed: ~25,853
+- Cleaned/usable chunks: ~23,455
+- Indexed categories: drugs, diseases, nutrition, guidelines
+
+---
+
+## 🧪 Evaluation Snapshot
+
+The current retrieval evaluation setup tracks:
+
+- Top-1 Accuracy
+- Hit@k Accuracy
+
+Latest recorded benchmark summary:
+
+- Top-1: 1.00
+- Hit@k: 1.00
 
 ---
 
@@ -228,6 +256,47 @@ Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/
 └── render.yaml
 ```
 
+### Verified Repository Structure (Updated)
+
+```text
+Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/
+│
+├── .venv/
+├── backend/
+│   ├── agent/
+│   ├── retrieval/
+│   ├── tools/
+│   ├── utils/
+│   ├── tests/
+│   ├── Scripts/
+│   ├── docs/
+│   ├── Datasets/
+│   ├── api.py
+│   ├── requirements.txt
+│   ├── medical_rag_dataset.json
+│   ├── medical_vector_db.faiss
+│   ├── test_agent.py
+│   └── test_retrieval.py
+│
+├── frontend/
+│   ├── src/
+│   ├── public/
+│   ├── medical-frontend/
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── vercel.json
+│   └── render.yaml
+│
+├── docs/
+│   ├── references/
+│   └── screenshots/
+├── DEPLOYMENT.md
+├── SETUP.md
+├── TESTING.md
+└── render.yaml
+```
+
+---
 ---
 
 ## ⚡ Installation
@@ -309,7 +378,9 @@ npm run dev
 - `POST /predict`
 - `POST /interaction`
 - `GET /history`
-- `DELETE /history`
+- `DELETE /clear`
+- `GET /profile`
+- `PUT /profile`
 
 Additional auth and persistence stack:
 
@@ -403,6 +474,26 @@ Set env vars:
 - `VITE_API_URL`
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
+
+Current deployment state:
+
+- ✅ Local deployment: stable and recommended for demos
+- ⚠️ Render free-tier deployment: may fail for heavy workloads due to memory constraints
+
+---
+
+## 🧩 Final Implementation Highlights
+
+- Production-style flow: Frontend -> FastAPI -> Agent System -> Hybrid RAG -> FAISS/Data -> Supabase
+- Hybrid retrieval with FAISS + BM25 + cross-encoder reranking
+- Multi-agent orchestration:
+    - Retrieval Agent
+    - Tool Agent
+    - Response Agent
+- Tooling includes interaction checks, risk prediction, alerts, and health insight generation
+- Backend includes lazy loading, logging, and chat persistence APIs
+- Frontend includes structured chat UX, auth flow, and persistent user history
+- Supabase includes auth + RLS-backed persistence tables (`profiles`, `chat_history`)
 
 ---
 

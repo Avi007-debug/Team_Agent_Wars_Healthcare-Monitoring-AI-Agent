@@ -1,16 +1,44 @@
-# React + Vite
+# Legacy Medical Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This folder contains the secondary/legacy React UI for the AI healthcare assistant project.
 
-Currently, two official plugins are available:
+Primary active frontend for current demos is located at:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `frontend/` (main 3-page app)
 
-## React Compiler
+Use this legacy frontend only for compatibility checks or older demo flows.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Run Locally
 
-## Expanding the ESLint configuration
+From repository root:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+cd frontend/medical-frontend
+npm install
+npm run dev
+```
+
+## Environment
+
+Create `.env` in this folder (if required by your local build) and set backend URL:
+
+```env
+VITE_API_URL=http://127.0.0.1:8000
+```
+
+If the build includes authentication flows, also set:
+
+```env
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+## Notes
+
+- This UI is maintained as a fallback interface.
+- API contract remains backend-driven (`/ask`, `/predict`, `/interaction`, `/history`, `/clear`, `/profile`).
+- For latest architecture and deployment guidance, refer to root docs:
+	- `README.md`
+	- `SETUP.md`
+	- `DEPLOYMENT.md`
+	- `TESTING.md`

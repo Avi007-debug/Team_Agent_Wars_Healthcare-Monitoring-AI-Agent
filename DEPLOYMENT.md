@@ -13,12 +13,41 @@ Auth + chat persistence:
 Frontend -> Supabase Auth + chat_history table
 ```
 
+## Architecture Evolution (Important)
+
+Initial pattern (early phase):
+
+```text
+Frontend -> Supabase directly
+```
+
+Current production-style pattern:
+
+```text
+Frontend -> FastAPI Backend -> Supabase
+```
+
+Why current pattern is used:
+
+- fewer client-side insert/session race issues
+- centralized validation and persistence logic
+- cleaner scaling path for API governance and monitoring
+
 ## 1. Pre-Deployment Checklist
 
 1. Backend runs locally from venv.
 2. Frontend runs locally with Vite.
 3. Supabase project is created and keys are available.
 4. Supabase table `chat_history` exists.
+5. Backend can access RAG assets (`medical_rag_dataset.json`, `medical_vector_db.faiss`).
+
+Official source references for rebuilt datasets:
+
+- OpenFDA: https://open.fda.gov/data/drug/label/
+- Disease dataset (Kaggle): https://www.kaggle.com/datasets/itachi9604/disease-symptom-description-dataset
+- USDA FoodData Central: https://fdc.nal.usda.gov/
+- WHO: https://www.who.int/health-topics
+- CDC: https://www.cdc.gov/
 
 Supabase SQL:
 
@@ -58,6 +87,7 @@ create table if not exists chat_history (
 - Large RAG assets can exceed free-tier limits.
 - First request after idle can be slow due to model warm-up.
 - Ensure `backend/medical_rag_dataset.json` and `backend/medical_vector_db.faiss` are available to the deployed instance.
+- Known practical limitation: memory-constrained instances (for example ~512MB class) may crash on heavy retrieval/reranking loads.
 
 ## 3. Backend Deployment (Railway Alternative)
 
@@ -123,6 +153,11 @@ Run these checks after both deployments:
 7. Clear Chat removes user history rows.
 8. `/predict` and `/interaction` return expected outputs.
 
+Recommended add-on checks:
+
+9. `/profile` GET and PUT work for authenticated users.
+10. No-knowledge/safety fallback is returned for out-of-domain prompts.
+
 ## 8. Useful Commands
 
 Backend local production-like start:
@@ -138,3 +173,9 @@ Frontend local build verification:
 cd frontend
 npm run build
 ```
+
+## 9. Deployment Status Summary
+
+- Local setup: stable and recommended for demos/evaluation.
+- Cloud free-tier setup: usable for light traffic, but can fail under heavy model usage due to memory ceilings.
+- If moving to full production, prefer higher-memory instances and optionally external vector infrastructure.

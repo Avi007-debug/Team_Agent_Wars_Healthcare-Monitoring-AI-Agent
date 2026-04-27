@@ -10,7 +10,31 @@ Project repository: https://github.com/Avi007-debug/Team_Agent_Wars_Healthcare-M
 - `frontend/` -> Main 3-page React website (Home, Chat, About)
 - `frontend/medical-frontend/` -> Secondary/legacy React UI
 
+Verified top-level docs and infra files:
+
+- `README.md`
+- `SETUP.md`
+- `TESTING.md`
+- `DEPLOYMENT.md`
+- `render.yaml`
+
 Use each folder directly when running that part of the project.
+
+## 1.1 Architecture (Current)
+
+```text
+Frontend (React UI)
+  -> FastAPI Backend
+  -> Multi-agent medical pipeline
+  -> Hybrid RAG (FAISS + BM25 + reranker)
+  -> Supabase (auth + persistence)
+```
+
+Why this matters:
+
+- frontend no longer writes directly to database
+- backend controls persistence and API validation
+- improved stability versus direct frontend database writes
 
 ## 2. Prerequisites
 
@@ -65,6 +89,16 @@ If missing on a fresh clone:
 3. Copy `medical_rag_dataset.json` to `backend/medical_rag_dataset.json`.
 4. Copy `medical_vector_db.faiss` to `backend/medical_vector_db.faiss`.
 
+Official dataset/reference sources used in this project:
+
+- OpenFDA Drug Label Dataset: https://open.fda.gov/data/drug/label/
+- Kaggle Disease-Symptom Description Dataset: https://www.kaggle.com/datasets/itachi9604/disease-symptom-description-dataset
+- USDA FoodData Central: https://fdc.nal.usda.gov/
+- WHO Health Topics/Guidelines: https://www.who.int/health-topics
+- CDC Health Guidance: https://www.cdc.gov/
+
+Note: the repository runs from preprocessed local assets (`medical_rag_dataset.json` + `medical_vector_db.faiss`) for speed and reproducibility.
+
 ## 7. Run Backend (FastAPI)
 
 From repository root:
@@ -78,6 +112,16 @@ cd backend
 Open Swagger UI:
 
 - http://127.0.0.1:8000/docs
+
+Primary backend endpoints to verify in Swagger:
+
+- `POST /ask`
+- `POST /predict`
+- `POST /interaction`
+- `GET /history`
+- `DELETE /clear`
+- `GET /profile`
+- `PUT /profile`
 
 ## 8. Run Backend Tests and Manual Checks
 

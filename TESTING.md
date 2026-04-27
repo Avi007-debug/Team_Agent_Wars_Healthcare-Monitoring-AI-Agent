@@ -20,6 +20,13 @@ pip install -r requirements.txt
 
 ## 1. Run Backend First
 
+Create `backend/.env` before testing:
+
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
 From repo root (recommended command):
 
 ```powershell
@@ -56,6 +63,8 @@ Invoke-RestMethod -Uri "http://127.0.0.1:8000/health" -Method Get | ConvertTo-Js
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/ask" -Method Post -ContentType "application/json" -Body (@{ query = "symptoms of diabetes"; role = "user" } | ConvertTo-Json -Compress) | ConvertTo-Json -Compress
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/predict" -Method Post -ContentType "application/json" -Body (@{ age = 55; bp = 160 } | ConvertTo-Json -Compress) | ConvertTo-Json -Compress
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/interaction" -Method Post -ContentType "application/json" -Body (@{ drug1 = "aspirin"; drug2 = "ibuprofen" } | ConvertTo-Json -Compress) | ConvertTo-Json -Compress
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/history?user_id=REPLACE_WITH_USER_UUID" -Method Get | ConvertTo-Json -Compress
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/profile?user_id=REPLACE_WITH_USER_UUID" -Method Get | ConvertTo-Json -Compress
 ```
 
 Expected:
@@ -64,6 +73,13 @@ Expected:
 - `POST /ask`: JSON with `response`
 - `POST /predict`: JSON with `prediction`
 - `POST /interaction`: JSON with `interaction`
+- `GET /history`: JSON with `data` list
+- `GET /profile`: JSON profile object or empty object when unavailable
+
+Additional endpoint notes:
+
+- Chat clear endpoint is `DELETE /clear?user_id=<uuid>`
+- Profile update endpoint is `PUT /profile`
 
 ## 4. Supabase Persistence Prerequisite
 
@@ -72,12 +88,19 @@ In Supabase SQL editor, run:
 ```sql
 create extension if not exists "uuid-ossp";
 
+create table if not exists profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  name text,
+  phone text,
+  created_at timestamptz default now()
+);
+
 create table if not exists chat_history (
-	id uuid default uuid_generate_v4() primary key,
-	user_id text,
-	query text,
-	response text,
-	created_at timestamp default now()
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  query text not null,
+  response text not null,
+  created_at timestamptz not null default now()
 );
 ```
 
@@ -112,3 +135,18 @@ python test_agent.py
 python test_retrieval.py
 python tests/test_api.py
 ```
+
+## 8. Retrieval Evaluation Snapshot
+
+For report consistency, maintain and re-verify retrieval metrics when datasets or reranker settings change.
+
+Current benchmark summary recorded by the team:
+
+- Top-1 Accuracy: 1.00
+- Hit@k Accuracy: 1.00
+
+Suggested regression triggers:
+
+- after changing FAISS index assets
+- after changing BM25 weighting or candidate fusion
+- after changing cross-encoder reranker model/config

@@ -97,6 +97,13 @@ Official dataset/reference sources used in this project:
 - WHO Health Topics/Guidelines: https://www.who.int/health-topics
 - CDC Health Guidance: https://www.cdc.gov/
 
+Additional direct dataset links provided by the team:
+
+- OpenFDA drug label download (CSV/JSON bundles): https://open.fda.gov/apis/drug/label/download/
+- Kaggle — Disease Symptoms and Treatments dataset: https://www.kaggle.com/datasets/snmahsa/disease-symptoms-and-treatments-dataset?resource=download
+- Kaggle — Foods & Nutrition dataset: https://www.kaggle.com/datasets/adarshzolekar/foods-nutrition-dataset
+- WHO publications / synthetic guideline sources: https://www.who.int/publications
+
 Note: the repository runs from preprocessed local assets (`medical_rag_dataset.json` + `medical_vector_db.faiss`) for speed and reproducibility.
 
 ## 7. Run Backend (FastAPI)

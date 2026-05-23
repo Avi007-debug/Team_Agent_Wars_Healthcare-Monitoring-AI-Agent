@@ -49,6 +49,13 @@ Official source references for rebuilt datasets:
 - WHO: https://www.who.int/health-topics
 - CDC: https://www.cdc.gov/
 
+Direct dataset links provided by the team (use for building/preprocessing):
+
+- OpenFDA drug label download (CSV/JSON bundles): https://open.fda.gov/apis/drug/label/download/
+- Kaggle — Disease Symptoms and Treatments dataset: https://www.kaggle.com/datasets/snmahsa/disease-symptoms-and-treatments-dataset?resource=download
+- Kaggle — Foods & Nutrition dataset: https://www.kaggle.com/datasets/adarshzolekar/foods-nutrition-dataset
+- WHO publications / synthetic guideline sources: https://www.who.int/publications
+
 Supabase SQL:
 
 ```sql

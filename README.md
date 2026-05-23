@@ -15,6 +15,8 @@ https://drive.google.com/file/d/1Dz0GfoIwkxKhK2sKMLt44T-mq1O8JYYL/view?usp=shari
 **Backup Assets (Complete Pack)**  
 https://drive.google.com/file/d/1m-fUhmBdns8lD3BhdRqYpaclD7OXiSx/view?usp=sharing  
 
+**Reference:** Jump directly to the dataset links: [Additional Dataset Sources](#additional-dataset-sources)
+
 ---
 
 ## 🎥 Demo & Presentation
@@ -152,6 +154,13 @@ Note: source acquisition includes publicly available medical/open datasets and c
 - USDA FoodData Central (official nutrition reference): https://fdc.nal.usda.gov/
 - WHO Health Topics and Guidelines: https://www.who.int/health-topics
 - CDC Health Topics and Guidance: https://www.cdc.gov/
+
+### Additional Dataset Sources
+
+- OpenFDA drug label download (CSV/JSON bundles): https://open.fda.gov/apis/drug/label/download/
+- Kaggle — Disease Symptoms and Treatments dataset: https://www.kaggle.com/datasets/snmahsa/disease-symptoms-and-treatments-dataset?resource=download
+- Kaggle — Foods & Nutrition dataset: https://www.kaggle.com/datasets/adarshzolekar/foods-nutrition-dataset
+- WHO publications / synthetic guideline sources: https://www.who.int/publications
 
 ---
 

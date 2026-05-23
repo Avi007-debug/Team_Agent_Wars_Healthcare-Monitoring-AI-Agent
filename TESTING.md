@@ -145,6 +145,13 @@ Current benchmark summary recorded by the team:
 - Top-1 Accuracy: 1.00
 - Hit@k Accuracy: 1.00
 
+Recommended canonical dataset sources to reference when reproducing retrieval/benchmark results:
+
+- OpenFDA drug label download (CSV/JSON bundles): https://open.fda.gov/apis/drug/label/download/
+- Kaggle — Disease Symptoms and Treatments dataset: https://www.kaggle.com/datasets/snmahsa/disease-symptoms-and-treatments-dataset?resource=download
+- Kaggle — Foods & Nutrition dataset: https://www.kaggle.com/datasets/adarshzolekar/foods-nutrition-dataset
+- WHO publications / synthetic guideline sources: https://www.who.int/publications
+
 Suggested regression triggers:
 
 - after changing FAISS index assets

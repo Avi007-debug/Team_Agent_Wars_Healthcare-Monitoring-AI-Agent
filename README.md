@@ -9,6 +9,9 @@
 **GitHub Repository**  
 https://github.com/Avi007-debug/Team_Agent_Wars_Healthcare-Monitoring-AI-Agent  
 
+**Deployed Frontend**  
+https://team-agent-wars-healthcare-monitori.vercel.app/  
+
 **RAG Assets (Latest Dataset & Vectors)**  
 https://drive.google.com/file/d/1Dz0GfoIwkxKhK2sKMLt44T-mq1O8JYYL/view?usp=sharing  
 

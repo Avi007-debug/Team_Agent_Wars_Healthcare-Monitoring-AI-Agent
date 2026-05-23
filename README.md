@@ -149,19 +149,18 @@ Note: source acquisition includes publicly available medical/open datasets and c
 
 ### Official Dataset and Reference Links
 
-- OpenFDA Drug Label Dataset: https://open.fda.gov/data/drug/label/
-- Kaggle Disease-Symptom Description Dataset: https://www.kaggle.com/datasets/itachi9604/disease-symptom-description-dataset
-- USDA FoodData Central (official nutrition reference): https://fdc.nal.usda.gov/
-- WHO Health Topics and Guidelines: https://www.who.int/health-topics
-- CDC Health Topics and Guidance: https://www.cdc.gov/
-
-### Additional Dataset Sources
-
 - OpenFDA drug label download (CSV/JSON bundles): https://open.fda.gov/apis/drug/label/download/
 - Kaggle — Disease Symptoms and Treatments dataset: https://www.kaggle.com/datasets/snmahsa/disease-symptoms-and-treatments-dataset?resource=download
 - Kaggle — Foods & Nutrition dataset: https://www.kaggle.com/datasets/adarshzolekar/foods-nutrition-dataset
 - WHO publications / synthetic guideline sources: https://www.who.int/publications
 
+### Additional Dataset Sources
+
+- OpenFDA Drug Label Dataset: https://open.fda.gov/data/drug/label/
+- Kaggle Disease-Symptom Description Dataset: https://www.kaggle.com/datasets/itachi9604/disease-symptom-description-dataset
+- USDA FoodData Central (official nutrition reference): https://fdc.nal.usda.gov/
+- WHO Health Topics and Guidelines: https://www.who.int/health-topics
+- CDC Health Topics and Guidance: https://www.cdc.gov/
 ---
 
 ## 📊 Dataset Statistics

@@ -133,7 +133,7 @@ The backend uses a hybrid retrieval stack with the following stages:
 - model: `cross-encoder/ms-marco-MiniLM-L-6-v2`
 
 7. Safety guard
-- no-knowledge checks to suppress unrelated answers
+- Knowledge checks to suppress unrelated answers
 
 ---
 

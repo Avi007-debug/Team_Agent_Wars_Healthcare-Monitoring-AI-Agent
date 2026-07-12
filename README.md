@@ -12,6 +12,9 @@ https://github.com/Avi007-debug/Team_Agent_Wars_Healthcare-Monitoring-AI-Agent
 **Deployed Frontend**  
 https://team-agent-wars-healthcare-monitori.vercel.app/  
 
+**Deployed Backend (GCP Cloud Run)**  
+https://medassist-backend-420530289428.us-central1.run.app  
+
 **RAG Assets (Latest Dataset & Vectors)**  
 https://drive.google.com/file/d/1Dz0GfoIwkxKhK2sKMLt44T-mq1O8JYYL/view?usp=sharing  
 
@@ -81,6 +84,14 @@ The assistant follows an agentic workflow where it can:
 - Role-aware requests (`user` / `doctor`)
 - Chat/history endpoints (`/history` GET, `/clear` DELETE)
 - Branding support (logo integration, favicon set, web manifest)
+
+### 🔹 Cloud & DevOps (Latest Updates)
+
+- **GCP Cloud Run Serverless Deployment**: Auto-scaling, cost-effective containerized backend.
+- **Docker Size Optimization**: Implemented CPU-only PyTorch wheels, stripping CUDA bloat and reducing image size by ~2.5GB.
+- **Zero Cold-Start Latency**: Pre-cached Hugging Face embedding models during the Docker build phase to prevent instance timeouts.
+- **Unified Auth & Persistence**: Integrated Supabase PostgreSQL for seamless user authentication and row-level secured chat history.
+- **Stable Dependencies**: Hard-pinned compatible package versions to ensure fully reproducible Docker builds.
 
 ---
 
@@ -457,7 +468,8 @@ Set env vars:
 Current deployment state:
 
 - ✅ Local deployment: stable and recommended for demos
-- ⚠️ Render free-tier deployment: may fail for heavy workloads due to memory constraints
+- ✅ GCP Cloud Run deployment: Fully optimized and deployed (https://medassist-backend-420530289428.us-central1.run.app)
+- ⚠️ Render free-tier deployment: Deprecated / replaced by GCP.
 
 ---
 

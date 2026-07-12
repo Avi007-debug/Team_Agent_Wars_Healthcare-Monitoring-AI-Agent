@@ -127,7 +127,7 @@ create table if not exists chat_history (
 
 | Variable | Example |
 |---|---|
-| `VITE_API_URL` | `https://your-backend-service.onrender.com` |
+| `VITE_API_URL` | `https://medassist-backend-420530289428.us-central1.run.app` |
 | `VITE_SUPABASE_URL` | `https://your-project-id.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | `your-supabase-anon-key` |
 
@@ -183,6 +183,6 @@ npm run build
 
 ## 9. Deployment Status Summary
 
+- ✅ **GCP Cloud Run**: Production backend successfully deployed at `https://medassist-backend-420530289428.us-central1.run.app`.
 - Local setup: stable and recommended for demos/evaluation.
-- Cloud free-tier setup: usable for light traffic, but can fail under heavy model usage due to memory ceilings.
-- If moving to full production, prefer higher-memory instances and optionally external vector infrastructure.
+- Legacy free-tier setup (Render): deprecated due to heavy model usage memory ceilings.

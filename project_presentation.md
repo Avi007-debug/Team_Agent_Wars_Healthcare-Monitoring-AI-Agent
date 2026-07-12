@@ -6,7 +6,7 @@
 - **Batch:** 2026 Cohort
 - **Graduation Year:** 2026
 - **Project Duration:** 2 Months (8 Weeks)
-- **Elevator Pitch:** MedAssist is an intelligent, privacy-first healthcare AI agent that leverages advanced Retrieval-Augmented Generation (RAG) and local LLM intent routing to provide instant, evidence-based medical insights, automated medication reminders, and drug interaction analyses.
+- **Elevator Pitch:** MedAssist is an intelligent, multi-agent healthcare assistant that leverages advanced Retrieval-Augmented Generation (RAG) and dynamic tool orchestration to provide instant, evidence-based medical insights, automated medication reminders, and drug interaction analyses.
 
 ---
 
@@ -22,7 +22,7 @@ Our overall vision is to build a proactive healthcare companion that not only an
 
 - **Core Focus:** Conversational Healthcare Assistance & Medication Management
 - **Primary Industry:** Healthcare Technology (HealthTech) & AI
-- **Main AI Agent Framework:** Custom FastAPI-based Multi-Agent Orchestrator
+- **Main AI Agent Framework:** LangChain & FastAPI-based Agent Orchestrator
 - **Type of Agent:** Tool-Calling & RAG-Enabled Conversational Agent
 - **Main Capabilities:** Medical Query Resolution, Intent Routing, Medication Reminders, Drug Interaction Checks, Health Risk Assessments.
 
@@ -47,7 +47,7 @@ An AI Agent can contextually parse a user's natural language, intelligently rout
 - **Target Users:** Patients, Caregivers, and Wellness Enthusiasts.
 - **Business Impact:** Reduces patient anxiety, improves medication adherence (directly impacting recovery rates), and lowers the burden on primary healthcare providers by answering baseline queries.
 - **Technical Challenges:** Maintaining strict response accuracy (avoiding AI hallucinations), ensuring rapid intent routing, and managing large-scale vector retrieval within constrained memory environments.
-- **Existing Solutions & Limitations:** Tools like WebMD offer basic symptom checkers but lack personalization and conversational memory. General LLMs (like ChatGPT) lack verified clinical guardrails and real-time tool execution for personal reminders.
+- **Existing Solutions & Limitations:** Tools like WebMD offer basic symptom checkers but lack personalization and conversational memory. General chatbots lack verified clinical guardrails and real-time tool execution for personal reminders.
 
 ---
 
@@ -57,7 +57,7 @@ An AI Agent can contextually parse a user's natural language, intelligently rout
 | :--- | :--- | :--- | :--- | :--- |
 | **Frontend Framework** | React + Vite | Latest | User Interface | Fast build times, component reusability, and seamless state management. |
 | **Backend Framework** | FastAPI | 0.116.1 | API & Orchestration | High performance, native async support, and rapid Python API development. |
-| **Local LLM / Routing** | Ollama (Gemma/Llama) | Latest | Intent Detection | Privacy-preserving, offline-capable intent classification without API latency. |
+| **AI Orchestration** | LangChain / Agent Controller | Latest | Workflow Control | Provides the routing and state-graph logic for complex AI interactions. |
 | **Embeddings** | SentenceTransformers | 5.1.0 | Vectorization | Fast, localized semantic embeddings using `all-MiniLM-L6-v2`. |
 | **Vector Database** | FAISS | 1.13.0 | Document Retrieval | In-memory, highly optimized similarity search for clinical RAG. |
 | **Authentication & DB** | Supabase | >=2.15.0 | Auth & Chat History | Real-time PostgreSQL, easy row-level security, and seamless authentication. |
@@ -78,10 +78,10 @@ An AI Agent can contextually parse a user's natural language, intelligently rout
 | **Week 1** | Project Setup & Dataset Acquisition | Repo initialization, gathering FDA/WHO/CDC data | Formatting inconsistent CSV/JSON formats from different health organizations | Cleaned `medical_rag_dataset.json` |
 | **Week 2** | Embedding & Vector DB Integration | Integrated SentenceTransformers, generated FAISS index | High memory usage during initial vectorization phase | `medical_vector_db.faiss` file |
 | **Week 3** | Backend API & Basic RAG | FastAPI setup, `/ask` endpoint, RAG retrieval logic | Tuning retrieval thresholds to ensure relevant context injection | Functional Retrieval API |
-| **Week 4** | Local LLM Intent Router | Integrated Ollama, created `intent_router.py` | Prompt engineering to enforce deterministic routing outputs | Intent Classification Module |
-| **Week 5** | Tool Implementation | Drug interaction checker, reminder tools | Designing robust tool-calling schemas without function-calling native LLMs | Tool Agent Pipeline |
+| **Week 4** | Agent Controller Implementation | Configured LangChain / Router | Ensuring deterministic routing logic for safety-critical tools | Agent Routing Module |
+| **Week 5** | Tool Implementation | Drug interaction checker, reminder tools | Designing robust tool-calling schemas | Tool Agent Pipeline |
 | **Week 6** | Frontend & Authentication | React UI, Vite setup, Supabase Email/Password Auth | Managing complex conversational state in React hooks | Working Frontend UI |
-| **Week 7** | Cloud Deployment Preparation | Dockerizing backend, installing CPU-only PyTorch | Docker build failing due to futuristic/incompatible package versions | Optimized `Dockerfile` & `requirements.txt` |
+| **Week 7** | Cloud Deployment Preparation | Dockerizing backend, installing CPU-only PyTorch | Docker build failing due to heavy dependencies | Optimized `Dockerfile` & `requirements.txt` |
 | **Week 8** | Final Deployment & Testing | GCP Cloud Run deployment, End-to-end testing | Handling Cloud Run cold starts and memory constraints | Live deployed application |
 
 ---
@@ -92,10 +92,10 @@ An AI Agent can contextually parse a user's natural language, intelligently rout
 
 1. **Input:** The user types a query into the React frontend.
 2. **Authentication:** The frontend verifies the user's session token via Supabase. If valid, the request is forwarded to the FastAPI backend.
-3. **Intent Detection:** The backend passes the query to a local LLM (Ollama) which classifies the intent (e.g., `set_reminder`, `medical_query`, `drug_interaction`).
+3. **Intent Detection:** The backend's Agent Controller parses the query to classify the intent (e.g., `set_reminder`, `medical_query`, `drug_interaction`).
 4. **Agent Router & Tool Selection:** Based on the intent, the Agent Router delegates the task. If it's a tool (like setting an alarm), it routes to the Tool Agent. 
 5. **Vector Retrieval (RAG):** If the intent is a `medical_query`, the query is vectorized and searched against the FAISS vector database containing clinical guidelines.
-6. **Reasoning:** The LLM synthesizes the retrieved clinical context or tool outputs with the user's original query.
+6. **Reasoning:** The controller synthesizes the retrieved clinical context or tool outputs with the user's original query.
 7. **Memory & Database:** The final response is generated, sent to the user, and asynchronously logged into the Supabase PostgreSQL `chat_history` table to maintain conversation continuity.
 8. **Frontend Output:** The user receives the rendered response.
 
@@ -105,7 +105,7 @@ An AI Agent can contextually parse a user's natural language, intelligently rout
 graph TD
     A[User Input / React UI] --> B[Supabase Auth Check]
     B --> C{FastAPI Backend}
-    C --> D[Ollama Intent Detection]
+    C --> D[Agent Controller Intent Detection]
     
     D -->|Tool Intent| E[Tool Agent]
     E --> F[Drug Interaction / Reminders]
@@ -114,7 +114,7 @@ graph TD
     G --> H[(FAISS Vector DB)]
     H --> I[Retrieve Clinical Context]
     
-    F --> J[LLM Reasoning & Synthesis]
+    F --> J[Context Synthesis]
     I --> J
     
     J --> K[Response Generation]
@@ -126,20 +126,18 @@ graph TD
 - **Retrieval Process:** Uses Dense Passage Retrieval (SentenceTransformers) to find the top-K semantically similar medical chunks.
 - **Tool Calling:** Hardcoded Python functions triggered by intent classification strings.
 - **Memory Usage:** Supabase stores historical context, which is fetched and injected into the prompt for multi-turn conversations.
-- **Decision Making:** Governed by the local LLM which acts as an intelligent switchboard.
+- **Decision Making:** Governed by the centralized Agent Controller.
 
 ---
 
 # 7. Novel Approach
 
-Our project stands out by utilizing a **Hybrid Edge-Cloud Architecture** combined with a **Multi-Agent Orchestration Pattern**. 
-
-Instead of relying solely on expensive, latency-heavy cloud LLMs for every step, we use highly efficient, local LLMs (via Ollama) to perform preliminary intent routing. This significantly reduces API costs and improves privacy.
+Our project stands out by utilizing an **Agentic Orchestration Pattern** paired with a highly optimized deployment pipeline.
 
 **Unique Selling Points:**
-1. **Privacy-First Routing:** Intent classification is done using local models, preventing sensitive preliminary data leakage.
-2. **Deterministic Tool Calling:** We bypass the unreliable function-calling of smaller LLMs by using the LLM strictly as an intent classifier, followed by robust Python logic execution.
-3. **Clinical-Grade RAG:** Grounded purely in verified datasets (FDA, CDC, WHO) rather than the LLM's parametric memory, reducing dangerous medical hallucinations.
+1. **Intelligent Routing:** We employ a smart intent routing system that correctly delegates tasks between retrieval pipelines (RAG) and specialized clinical tools (alarms, pharmacology checkers).
+2. **Deterministic Tool Calling:** We bypass unreliable function-calling of generic models by ensuring rigid, code-based execution of critical medical tools.
+3. **Clinical-Grade RAG:** Grounded purely in verified datasets (FDA, CDC, WHO) rather than parametric memory, significantly reducing dangerous medical hallucinations.
 4. **Optimized Docker Footprint:** Utilizes CPU-only PyTorch wheels to reduce the container size by over 2.5 GB, allowing for rapid GCP Cloud Run scale-outs.
 5. **Pre-Cached Embedding Models:** Embedding models are downloaded *during* the Docker build phase, practically eliminating Cloud Run cold-start latency.
 6. **Unified Memory Architecture:** Supabase Postgres seamlessly handles both user authentication and conversational state in a single layer.
@@ -177,13 +175,13 @@ Instead of relying solely on expensive, latency-heavy cloud LLMs for every step,
 
 ### Phase 1 (Near-Term: Q3 2026)
 - **Features:** Voice input/output integration, PDF upload for lab report analysis.
-- **AI Improvements:** Upgrading the local router to a quantized Llama 3 model for higher classification accuracy.
+- **AI Improvements:** Migrating to a larger managed context-window environment for deep medical history synthesis.
 - **Infrastructure:** Implementing Redis for faster chat history caching.
 
 ### Phase 2 (Mid-Term: Q1 2027)
 - **Technical Upgrades:** Migrate from in-memory FAISS to a managed vector database (e.g., Pinecone or Supabase pgvector) for dynamic data updates.
 - **Mobile Support:** Launch a React Native wrapper for iOS and Android deployment.
-- **Security:** Implement HIPAA-compliant data masking pipelines before any data touches the reasoning LLM.
+- **Security:** Implement HIPAA-compliant data masking pipelines before any data touches external networks.
 
 ### Phase 3 (Long-Term: Q4 2027)
 - **Enterprise Support:** API access for clinics to integrate the agent into their EHR (Electronic Health Record) systems.
@@ -195,7 +193,7 @@ Instead of relying solely on expensive, latency-heavy cloud LLMs for every step,
 # 10. Conclusion
 
 **Project Summary:** 
-MedAssist successfully demonstrates how multi-agent architectures and RAG can be combined to create a safe, responsive, and highly intelligent medical companion.
+MedAssist successfully demonstrates how agentic orchestration and RAG can be combined to create a safe, responsive, and highly intelligent medical companion.
 
 **Technical Achievements:**
 We architected a streamlined, memory-optimized containerized environment capable of running complex NLP embeddings within the strict limits of serverless infrastructure (GCP Cloud Run), achieving a 2.5+ GB reduction in image size.
@@ -204,7 +202,6 @@ We architected a streamlined, memory-optimized containerized environment capable
 The platform validates a scalable business model in the HealthTech space, offering immediate value to patients through education and adherence, while maintaining a lean operational cost structure.
 
 **Key Metrics:**
-- **Routing Accuracy:** ~95% accurate intent classification using local Ollama.
 - **Latency:** < 1.5 seconds for tool-based queries; < 3 seconds for heavy RAG retrieval.
 - **Cost Optimization:** Serverless scaling to zero ensures zero idle costs, while CPU-only PyTorch keeps compute requirements minimal (2 CPU / 2Gi RAM).
 - **Storage Scalability:** Supabase allows scaling to millions of chat rows effortlessly.
@@ -217,7 +214,7 @@ The platform validates a scalable business model in the HealthTech space, offeri
 - `/backend`: FastAPI application, Agent logic, RAG retrieval scripts, FAISS index, and Dockerfile.
 - `/frontend`: React/Vite application, UI components, and Tailwind/Vanilla CSS styles.
 - `/supabase`: Database migration scripts and edge functions.
-- `/docs`: Markdown files for deployment, LLM setup, and testing guides.
+- `/docs`: Markdown files for deployment and testing guides.
 
 ## API Endpoints
 - `POST /api/chat`: Main conversational endpoint. Handles intent routing, tools, and RAG.
@@ -235,29 +232,29 @@ The platform validates a scalable business model in the HealthTech space, offeri
 
 ## AI Pipeline
 1. **Input Processing:** User text is sanitized and normalized.
-2. **Intent Classification:** Evaluated by Ollama.
+2. **Intent Classification:** Evaluated by the core Agent Controller.
 3. **Embedding:** If RAG is needed, text is converted to high-dimensional vectors via `all-MiniLM-L6-v2`.
 4. **Retrieval:** FAISS performs L2 distance search to find top 5 chunks.
 5. **Re-ranking:** A Cross-Encoder (`ms-marco-MiniLM-L-6-v2`) re-orders chunks by strict relevance.
-6. **Reasoning:** Chunks are injected into the LLM context window.
+6. **Reasoning:** Chunks are synthesized with conversational history.
 7. **Output:** Formatted markdown response is delivered to the frontend.
 
 ## Deployment Architecture
 **Frontend (Vercel/Netlify)** → **GCP Cloud Run (FastAPI)** → **Supabase (Auth & Chat History)**.
-The FastAPI backend holds the **FAISS Vector DB** in-memory and communicates with external LLM inference providers as needed.
+The FastAPI backend holds the **FAISS Vector DB** in-memory and communicates with inference providers as needed.
 
 ## Challenges Faced
 - **Technical Issues:** Managing Python package dependencies (like `numpy` and `torch` version conflicts) inside Docker.
 - **Deployment Issues:** Overcoming Docker build DNS failures (`Name or service not known`) when attempting to cache Hugging Face models.
-- **Model Issues:** Preventing the LLM from diagnosing patients directly, requiring extensive prompt engineering to enforce a "helpful assistant" persona.
+- **Model Issues:** Enforcing a strict "helpful assistant" persona to prevent unauthorized medical diagnoses.
 - **Scaling Issues:** Loading massive FAISS indices into memory requires careful instance sizing (2Gi RAM minimum) to prevent OOM (Out of Memory) crashes.
 
 ## Future Research Directions
-- Investigating the use of fully local, federated learning models to completely eliminate cloud dependencies.
+- Investigating the use of fully local, federated learning models.
 - Enhancing the Cross-Encoder pipeline to understand complex medical ontologies (SNOMED-CT).
 
 ## References
 - **OpenFDA:** `https://open.fda.gov/data/drug/label/`
 - **WHO Publications:** `https://www.who.int/publications`
 - **SentenceTransformers Documentation:** `https://sbert.net/`
-- **FastAPI Documentation:** `https://fastapi.tiangolo.com/`
+- **LangChain / FastAPI Documentation**

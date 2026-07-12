@@ -66,8 +66,6 @@ serve(async (req) => {
     if (fetchErr) throw fetchErr;
 
     const now = new Date();
-    // Minutes past midnight in current time (UTC by default on Supabase servers)
-    const currentMin = now.getHours() * 60 + now.getMinutes();
     const todayTimestamp = now.getTime();
 
     let processedCount = 0;
@@ -75,6 +73,24 @@ serve(async (req) => {
     for (const r of (reminders || [])) {
       const targetMin = parseReminderTimeToMinutes(r.reminder_time);
       if (targetMin === null) continue;
+
+      // Resolve timezone-specific current minutes past midnight (default to Asia/Kolkata)
+      const tz = r.timezone || 'Asia/Kolkata';
+      let currentMin = now.getUTCHours() * 60 + now.getUTCMinutes();
+      try {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: tz,
+          hour: 'numeric',
+          minute: 'numeric',
+          hour12: false
+        });
+        const parts = formatter.formatToParts(now);
+        const hr = parseInt(parts.find(p => p.type === 'hour')!.value, 10);
+        const min = parseInt(parts.find(p => p.type === 'minute')!.value, 10);
+        currentMin = hr * 60 + min;
+      } catch (err) {
+        console.error(`Invalid timezone ${tz}:`, err);
+      }
 
       let shouldTrigger = false;
       const lastTriggered = r.last_triggered_at ? new Date(r.last_triggered_at).getTime() : null;

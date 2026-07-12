@@ -42,6 +42,7 @@ interface Props {
   currentSessionId: string;
   onSelectSession: (id: string) => void;
   onRenameSession: (id: string, name: string) => void;
+  onDeleteSession: (id: string) => void;
   width: number;
   onWidthChange: (w: number) => void;
   reminders: Reminder[];
@@ -64,6 +65,7 @@ export default function ChatSidebar({
   currentSessionId,
   onSelectSession,
   onRenameSession,
+  onDeleteSession,
   width,
   onWidthChange,
   reminders,
@@ -196,8 +198,11 @@ export default function ChatSidebar({
         </motion.button>
       </div>
 
-      {/* Role selector */}
-      <div className="p-4 border-b border-border/40 bg-card/20">
+      {/* Unified Sidebar Scroll Wrapper */}
+      <div className="flex-1 overflow-y-auto pr-1 select-none">
+
+        {/* Role selector */}
+        <div className="p-4 border-b border-border/40 bg-card/20">
         <label className="text-[10px] font-bold uppercase tracking-[2px] text-muted-foreground mb-2 block">
           Your Role
         </label>
@@ -229,7 +234,7 @@ export default function ChatSidebar({
       )}
 
       {/* Recent Chats / Threads Section */}
-      <div className="p-4 border-b border-border/40 bg-card/10 flex flex-col gap-2.5 max-h-[180px] overflow-y-auto">
+      <div className="p-4 border-b border-border/40 bg-card/10 flex flex-col gap-2.5">
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <MessageCircle size={14} className="text-secondary" />
           <h3 className="text-[10px] font-bold uppercase tracking-[2px]">
@@ -274,16 +279,30 @@ export default function ChatSidebar({
                     >
                       {s.name}
                     </button>
-                    <button
-                      onClick={() => {
-                        setRenamingId(s.id);
-                        setRenameValue(s.name);
-                      }}
-                      className="p-1 mr-1.5 text-muted-foreground hover:text-primary rounded hover:bg-primary/10 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
-                      title="Rename Consultation"
-                    >
-                      <Edit2 size={12} />
-                    </button>
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all mr-1">
+                      <button
+                        onClick={() => {
+                          setRenamingId(s.id);
+                          setRenameValue(s.name);
+                        }}
+                        className="p-1 text-muted-foreground hover:text-primary rounded hover:bg-primary/10 transition-all cursor-pointer"
+                        title="Rename Consultation"
+                      >
+                        <Edit2 size={12} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm("Are you sure you want to delete this chat consultation?")) {
+                            onDeleteSession(s.id);
+                          }
+                        }}
+                        className="p-1 text-muted-foreground hover:text-danger rounded hover:bg-danger/10 transition-all cursor-pointer"
+                        title="Delete Consultation"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
@@ -478,7 +497,7 @@ export default function ChatSidebar({
         </AnimatePresence>
 
         {/* Reminders List */}
-        <div className="max-h-[140px] overflow-y-auto space-y-1.5 pr-1">
+        <div className="space-y-1.5 pr-1">
           {reminders.length === 0 ? (
             <p className="text-[11px] text-muted-foreground italic text-center py-2">
               No active reminders set.
@@ -542,7 +561,7 @@ export default function ChatSidebar({
       </div>
 
       {/* Quick queries */}
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="p-3">
         <h3 className="text-[10px] font-bold uppercase tracking-[2px] text-muted-foreground mb-3 px-1">
           Quick Queries
         </h3>
@@ -561,6 +580,8 @@ export default function ChatSidebar({
           ))}
         </div>
       </div>
+
+      </div> {/* End Unified Scroll Wrapper */}
 
       {/* Clear */}
       <div className="p-3 border-t border-border bg-card/20">

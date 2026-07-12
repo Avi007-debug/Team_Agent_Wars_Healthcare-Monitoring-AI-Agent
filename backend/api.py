@@ -143,6 +143,8 @@ async def ask(req: QueryRequest):
 			except Exception as e:
 				print("❌ Supabase history fetch failed:", e)
 
+		response = agent(req.query, conversation_memory=memory, user_id=req.user_id, role=req.role)
+
 		# Extract main medical entity keyword
 		detected_keyword = None
 		try:

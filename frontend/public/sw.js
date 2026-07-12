@@ -78,11 +78,12 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
-      }).catch(() => {
+      }).catch((err) => {
         // SPA navigation fallback to index.html
         if (event.request.mode === 'navigate') {
           return caches.match('/index.html') || caches.match('/');
         }
+        return new Response('Network Connection Offline', { status: 503, statusText: 'Service Unavailable' });
       });
     })
   );

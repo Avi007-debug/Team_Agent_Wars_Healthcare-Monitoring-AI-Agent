@@ -259,7 +259,8 @@ export default function ChatPage() {
         bot: row.response,
         role: 'user',
         createdAt: row.created_at ?? '',
-        sessionId: row.session_id || '00000000-0000-0000-0000-000000000000'
+        sessionId: row.session_id || '00000000-0000-0000-0000-000000000000',
+        sessionName: row.session_name || undefined
       })));
     } catch (err: any) {
       console.error("Exception loading history:", err);
@@ -490,6 +491,66 @@ export default function ChatPage() {
     setToastMessage('✨ Started a new chat session.');
   }, []);
 
+  const renameSession = useCallback(async (sId: string, newName: string) => {
+    setCustomNames((prev) => {
+      const copy = { ...prev, [sId]: newName };
+      localStorage.setItem('chat_session_names', JSON.stringify(copy));
+      return copy;
+    });
+
+    // Update in-memory state instantly
+    setAllMessages((prev) =>
+      prev.map((msg) =>
+        msg.sessionId === sId ? { ...msg, sessionName: newName } : msg
+      )
+    );
+
+    try {
+      await supabase
+        .from('chat_history')
+        .update({ session_name: newName })
+        .eq('session_id', sId);
+    } catch (err) {
+      console.warn("Supabase rename sync bypassed:", err);
+    }
+  }, []);
+
+  const deleteSession = useCallback(async (sId: string) => {
+    // 1. Remove from allMessages state
+    setAllMessages((prev) => prev.filter((m) => m.sessionId !== sId));
+
+    // 2. Clear from customNames localStorage
+    setCustomNames((prev) => {
+      const copy = { ...prev };
+      delete copy[sId];
+      localStorage.setItem('chat_session_names', JSON.stringify(copy));
+      return copy;
+    });
+
+    // 3. Delete from Supabase
+    try {
+      await supabase
+        .from('chat_history')
+        .delete()
+        .eq('session_id', sId);
+      setToastMessage('🗑️ Consultation deleted successfully.');
+    } catch (err: any) {
+      setToastMessage(`Error deleting consultation: ${err?.message || 'DB Sync failed'}`);
+    }
+
+    // 4. Fallback if the active session is deleted
+    if (sessionId === sId) {
+      const remainingIds = Array.from(new Set(allMessages.filter(m => m.sessionId !== sId).map(m => m.sessionId)));
+      const nextId = remainingIds.find(id => id && id !== '00000000-0000-0000-0000-000000000000');
+      if (nextId) {
+        setSessionId(nextId);
+        localStorage.setItem('chat_session_id', nextId);
+      } else {
+        startNewChat();
+      }
+    }
+  }, [sessionId, allMessages, startNewChat]);
+
   // Delete/dismiss medication reminder
   const deleteReminder = async (id: string) => {
     const { error } = await supabase
@@ -585,6 +646,11 @@ export default function ChatPage() {
     localStorage.setItem('chat_session_id', sId);
   };
 
+  const handleWidthChange = (w: number) => {
+    setSidebarWidth(w);
+    localStorage.setItem('sidebar_width', String(w));
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -601,6 +667,10 @@ export default function ChatPage() {
         sessions={chatSessions}
         currentSessionId={sessionId}
         onSelectSession={handleSelectSession}
+        onRenameSession={renameSession}
+        onDeleteSession={deleteSession}
+        width={sidebarWidth}
+        onWidthChange={handleWidthChange}
         reminders={reminders}
         onDeleteReminder={deleteReminder}
         onAddReminder={addReminder}

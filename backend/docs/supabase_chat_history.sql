@@ -113,3 +113,56 @@ for update
 to authenticated
 using (user_id = auth.uid())
 with check (user_id = auth.uid());
+
+-- =========================
+-- REMINDERS TABLE
+-- =========================
+
+create table if not exists reminders (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  medicine text not null,
+  reminder_time text not null,
+  status text not null default 'active',
+  notification_pref text not null default 'in_app',
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_reminders_user_status
+on reminders (user_id, status);
+
+-- =========================
+-- RLS REMINDERS
+-- =========================
+
+alter table reminders enable row level security;
+
+drop policy if exists "Users can view own reminders" on reminders;
+drop policy if exists "Users can insert own reminders" on reminders;
+drop policy if exists "Users can delete own reminders" on reminders;
+drop policy if exists "Users can update own reminders" on reminders;
+
+create policy "Users can view own reminders"
+on reminders
+for select
+to authenticated
+using (user_id = auth.uid());
+
+create policy "Users can insert own reminders"
+on reminders
+for insert
+to authenticated
+with check (user_id = auth.uid());
+
+create policy "Users can delete own reminders"
+on reminders
+for delete
+to authenticated
+using (user_id = auth.uid());
+
+create policy "Users can update own reminders"
+on reminders
+for update
+to authenticated
+using (user_id = auth.uid())
+with check (user_id = auth.uid());

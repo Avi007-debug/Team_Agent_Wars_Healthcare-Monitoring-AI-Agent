@@ -157,19 +157,10 @@ VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-Create Supabase table in SQL editor:
-
-```sql
-create extension if not exists "uuid-ossp";
-
-create table if not exists chat_history (
-  id uuid default uuid_generate_v4() primary key,
-  user_id text,
-  query text,
-  response text,
-  created_at timestamp default now()
-);
-```
+Create Supabase tables using the script in [supabase_chat_history.sql](file:///c:/Coding/Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/backend/docs/supabase_chat_history.sql). This unified script enables UUID support, and builds:
+- `profiles` table (holds synced auth details)
+- `chat_history` table (RLS enabled for private history)
+- `reminders` table (RLS enabled for medication alarms)
 
 Main frontend (3-page app) routes:
 

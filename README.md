@@ -401,23 +401,12 @@ It is not a substitute for professional medical advice, diagnosis, or treatment.
 2. Save project values:
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
-3. Run this SQL in Supabase SQL editor:
-
-```sql
-create extension if not exists "uuid-ossp";
-
-create table if not exists chat_history (
-    id uuid default uuid_generate_v4() primary key,
-    user_id text,
-    query text,
-    response text,
-    created_at timestamp default now()
-);
-```
+3. Run the SQL script from [supabase_chat_history.sql](file:///c:/Coding/Team_Agent_Wars_Healthcare-Monitoring-AI-Agent/backend/docs/supabase_chat_history.sql) in your Supabase SQL editor. This unified script sets up:
+   - `profiles` table: for user profile mapping (synced with triggers from auth.users).
+   - `chat_history` table: with Row Level Security (RLS) to store user search interactions.
+   - `reminders` table: with Row Level Security (RLS) to persist scheduled medication alarms.
 
 4. Add frontend env vars in `frontend/.env` and restart Vite.
-
-Optional: use prepared SQL file at `backend/docs/supabase_chat_history.sql`.
 
 Current frontend enhancements:
 

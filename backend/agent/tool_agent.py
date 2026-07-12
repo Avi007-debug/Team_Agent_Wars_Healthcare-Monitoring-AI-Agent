@@ -87,7 +87,7 @@ def _extract_heart_rate(query):
 	return None
 
 
-def tool_agent(query):
+def tool_agent(query, user_id=None):
 
 	q = (query or "").lower().strip()
 	if not q:
@@ -105,7 +105,7 @@ def tool_agent(query):
 		medicine, time = _extract_reminder_request(q)
 		if not medicine or not time:
 			return "Use reminder format: remind me to take <medicine> at <time>."
-		return set_reminder(medicine, time)
+		return set_reminder(medicine, time, user_id=user_id)
 
 	if "risk" in q:
 		numbers = extract_numbers(q)

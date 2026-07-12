@@ -90,15 +90,12 @@ app.add_middleware(
 	allow_headers=["*"],
 )
 
-# --------------- In-memory chat log ---------------
-chat_history: list[dict] = []
-
-
 # --------------- Models ---------------
 class QueryRequest(BaseModel):
 	query: str
 	role: str = "user"
 	user_id: str | None = None
+	history: list[dict] | None = None
 
 
 class PredictRequest(BaseModel):
@@ -127,15 +124,25 @@ def health_check():
 async def ask(req: QueryRequest):
 	def run_pipeline():
 		agent = load_medical_agent()
-		memory = [{"user": m["user"], "assistant": m["bot"]} for m in chat_history[-12:]]
-		response = agent(req.query, conversation_memory=memory)
+		
+		# Resolve memory either from client-provided history or from Supabase fallback
+		memory = []
+		if req.history is not None:
+			memory = [{"user": m.get("user", ""), "assistant": m.get("assistant", m.get("bot", ""))} for m in req.history[-12:]]
+		elif supabase and req.user_id:
+			try:
+				res = supabase.table("chat_history") \
+					.select("query, response") \
+					.eq("user_id", req.user_id) \
+					.order("created_at", desc=True) \
+					.limit(12) \
+					.execute()
+				db_history = res.data[::-1]
+				memory = [{"user": m["query"], "assistant": m["response"]} for m in db_history]
+			except Exception as e:
+				print("❌ Supabase history fetch failed:", e)
 
-		chat_history.append({
-			"user": req.query,
-			"bot": response,
-			"role": req.role,
-			"created_at": datetime.now(timezone.utc).isoformat(),
-		})
+		response = agent(req.query, conversation_memory=memory, user_id=req.user_id)
 
 		if supabase and req.user_id:
 			try:

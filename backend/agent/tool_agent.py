@@ -56,13 +56,28 @@ def _extract_medicines(query, entities):
 
 
 def _extract_reminder_request(query):
+	# Default frequency
+	freq = "once"
+	q_lower = query.lower()
+	if "every 8 hours" in q_lower:
+		freq = "every_8_hours"
+	elif "daily" in q_lower or "every day" in q_lower:
+		freq = "daily"
+	elif "weekly" in q_lower or "every week" in q_lower:
+		freq = "weekly"
+
 	match = re.search(r"remind me to take\s+(.+?)\s+at\s+(.+)", query)
 	if not match:
-		return None, None
+		return None, None, freq
 
 	medicine = match.group(1).strip(" .")
 	time = match.group(2).strip(" .")
-	return medicine, time
+
+	# Clean frequency keywords from medicine name if matched
+	for keyword in ["every 8 hours", "every day", "every week", "daily", "weekly"]:
+		medicine = re.sub(rf"\b{keyword}\b", "", medicine, flags=re.IGNORECASE).strip()
+
+	return medicine, time, freq
 
 
 def _extract_risk_request(query):
@@ -102,10 +117,10 @@ def tool_agent(query, user_id=None):
 		return "Please specify two drugs. Example: drug interaction aspirin ibuprofen."
 
 	if "remind" in q:
-		medicine, time = _extract_reminder_request(q)
+		medicine, time, freq = _extract_reminder_request(q)
 		if not medicine or not time:
 			return "Use reminder format: remind me to take <medicine> at <time>."
-		return set_reminder(medicine, time, user_id=user_id)
+		return set_reminder(medicine, time, user_id=user_id, frequency=freq)
 
 	if "risk" in q:
 		numbers = extract_numbers(q)

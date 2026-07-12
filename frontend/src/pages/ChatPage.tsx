@@ -232,12 +232,31 @@ export default function ChatPage() {
     const interval = setInterval(() => {
       const now = new Date();
       const currentMin = now.getHours() * 60 + now.getMinutes();
+      const todayTimestamp = now.getTime();
 
       reminders.forEach((r) => {
         if (r.status !== 'active') return;
         const targetMin = parseReminderTimeToMinutes(r.reminder_time);
         
-        if (targetMin !== null && targetMin === currentMin) {
+        let shouldTrigger = false;
+        const lastTriggered = r.last_triggered_at ? new Date(r.last_triggered_at).getTime() : null;
+
+        if (r.frequency === "every_8_hours") {
+          // Trigger if not triggered yet, or if 8 hours have passed (8 * 60 * 60 * 1000 ms)
+          shouldTrigger = !lastTriggered || (todayTimestamp - lastTriggered) >= 8 * 60 * 60 * 1000;
+        } else if (targetMin !== null && targetMin === currentMin) {
+          if (r.frequency === "once") {
+            shouldTrigger = !lastTriggered;
+          } else if (r.frequency === "daily") {
+            // Trigger if not triggered today (at least 20 hours ago to avoid double trigger in same minute)
+            shouldTrigger = !lastTriggered || (todayTimestamp - lastTriggered) >= 20 * 60 * 60 * 1000;
+          } else if (r.frequency === "weekly") {
+            // Trigger if weekly (at least 6 days ago)
+            shouldTrigger = !lastTriggered || (todayTimestamp - lastTriggered) >= 6 * 24 * 60 * 60 * 1000;
+          }
+        }
+
+        if (shouldTrigger) {
           const runKey = `${r.id}-${currentMin}`;
           if (lastTriggeredReminderRef.current !== runKey) {
             lastTriggeredReminderRef.current = runKey;
@@ -402,7 +421,7 @@ export default function ChatPage() {
   };
 
   // Add medication reminder manually
-  const addReminder = async (medicine: string, time: string, pref: string) => {
+  const addReminder = async (medicine: string, time: string, pref: string, freq: string) => {
     if (!user) return;
     const { error } = await supabase
       .from('reminders')
@@ -411,7 +430,8 @@ export default function ChatPage() {
         medicine,
         reminder_time: time,
         status: 'active',
-        notification_pref: pref
+        notification_pref: pref,
+        frequency: freq
       });
 
     if (error) {
@@ -427,10 +447,15 @@ export default function ChatPage() {
   const dismissAlarm = async () => {
     if (!activeAlarm) return;
     
-    // Mark as completed so it won't fire again
+    // For once-off, mark status as completed. For recurring, just update last_triggered_at.
+    const updates: any = { last_triggered_at: new Date().toISOString() };
+    if (activeAlarm.frequency === 'once') {
+      updates.status = 'completed';
+    }
+
     const { error } = await supabase
       .from('reminders')
-      .update({ status: 'completed' })
+      .update(updates)
       .eq('id', activeAlarm.id);
 
     if (error) {

@@ -125,6 +125,8 @@ create table if not exists reminders (
   reminder_time text not null,
   status text not null default 'active',
   notification_pref text not null default 'in_app',
+  frequency text not null default 'once',
+  last_triggered_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -166,3 +168,29 @@ for update
 to authenticated
 using (user_id = auth.uid())
 with check (user_id = auth.uid());
+
+-- =========================================================================
+-- DATABASE MIGRATIONS (Run these if the reminders table already exists)
+-- =========================================================================
+-- ALTER TABLE reminders ADD COLUMN IF NOT EXISTS frequency text NOT NULL DEFAULT 'once';
+-- ALTER TABLE reminders ADD COLUMN IF NOT EXISTS last_triggered_at timestamptz;
+
+-- =========================================================================
+-- SUPABASE CRON SCHEDULER SETUP (pg_cron & pg_net)
+-- =========================================================================
+-- Enable required extensions:
+-- CREATE EXTENSION IF NOT EXISTS pg_cron;
+-- CREATE EXTENSION IF NOT EXISTS pg_net;
+
+-- Schedule the send-reminder Edge Function to run every minute:
+-- SELECT cron.schedule(
+--   'medassist-email-alerts',
+--   '* * * * *',
+--   $$
+--   SELECT net.http_post(
+--     url := 'https://<YOUR_PROJECT_ID>.supabase.co/functions/v1/send-reminder',
+--     headers := '{"Content-Type": "application/json", "Authorization": "Bearer <YOUR_SERVICE_ROLE_KEY>"}'::jsonb,
+--     body := '{}'::jsonb
+--   );
+--   $$
+-- );

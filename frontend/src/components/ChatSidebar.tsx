@@ -32,7 +32,7 @@ interface Props {
   onClear: () => void;
   reminders: Reminder[];
   onDeleteReminder: (id: string) => Promise<void>;
-  onAddReminder: (medicine: string, time: string, pref: string) => Promise<void>;
+  onAddReminder: (medicine: string, time: string, pref: string, freq: string) => Promise<void>;
   notificationPref: string;
   onNotificationPrefChange: (pref: string) => void;
   browserPermission: string;
@@ -56,6 +56,7 @@ export default function ChatSidebar({
   const [newMed, setNewMed] = useState('');
   const [newTime, setNewTime] = useState('');
   const [newPref, setNewPref] = useState('in_app');
+  const [newFreq, setNewFreq] = useState('once');
   const [submitting, setSubmitting] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
 
@@ -64,9 +65,10 @@ export default function ChatSidebar({
     if (!newMed.trim() || !newTime.trim()) return;
     setSubmitting(true);
     try {
-      await onAddReminder(newMed.trim(), newTime.trim(), newPref);
+      await onAddReminder(newMed.trim(), newTime.trim(), newPref, newFreq);
       setNewMed('');
       setNewTime('');
+      setNewFreq('once');
       setShowAddForm(false);
     } catch (err) {
       console.error(err);
@@ -170,10 +172,24 @@ export default function ChatSidebar({
                   onChange={(e) => setNewTime(e.target.value)}
                   className="flex-1 px-2.5 py-1.5 rounded-lg bg-background/50 border border-border text-xs focus:outline-none focus:border-primary text-foreground"
                 />
+              </div>
+              <div className="flex gap-2">
+                <select
+                  value={newFreq}
+                  onChange={(e) => setNewFreq(e.target.value)}
+                  className="flex-1 px-2 py-1.5 rounded-lg bg-background/50 border border-border text-xs focus:outline-none focus:border-primary text-foreground cursor-pointer"
+                  title="Frequency schedule"
+                >
+                  <option value="once">⏰ Once</option>
+                  <option value="daily">🔄 Daily</option>
+                  <option value="weekly">📅 Weekly</option>
+                  <option value="every_8_hours">🕒 Every 8h</option>
+                </select>
                 <select
                   value={newPref}
                   onChange={(e) => setNewPref(e.target.value)}
-                  className="px-2 py-1.5 rounded-lg bg-background/50 border border-border text-xs focus:outline-none focus:border-primary text-foreground cursor-pointer"
+                  className="flex-1 px-2 py-1.5 rounded-lg bg-background/50 border border-border text-xs focus:outline-none focus:border-primary text-foreground cursor-pointer"
+                  title="Notification Channel"
                 >
                   <option value="in_app">💻 In-App</option>
                   <option value="browser">🔔 Push</option>
@@ -205,11 +221,14 @@ export default function ChatSidebar({
               >
                 <div className="flex flex-col min-w-0">
                   <span className="font-semibold text-foreground truncate">{r.medicine}</span>
-                  <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                  <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5 flex-wrap">
                     <Clock size={10} className="text-primary/70" />
                     {r.reminder_time}
                     <span className="opacity-80 px-1 py-0.25 rounded bg-primary/10 text-primary text-[8px]">
                       {r.notification_pref === 'in_app' ? 'In-App' : r.notification_pref === 'browser' ? 'Push' : 'Email'}
+                    </span>
+                    <span className="opacity-80 px-1 py-0.25 rounded bg-secondary/10 text-secondary text-[8px]">
+                      {r.frequency === 'once' ? 'Once' : r.frequency === 'daily' ? 'Daily' : r.frequency === 'weekly' ? 'Weekly' : 'Every 8h'}
                     </span>
                   </span>
                 </div>

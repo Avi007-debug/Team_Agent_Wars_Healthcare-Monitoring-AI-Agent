@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -12,6 +12,11 @@ ENV HF_HOME=/app/hf_cache
 
 # Copy requirements and install
 COPY requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install \
+    --no-cache-dir \
+    --index-url https://download.pytorch.org/whl/cpu \
+    torch==2.8.0
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the cache script and trigger the download during image build

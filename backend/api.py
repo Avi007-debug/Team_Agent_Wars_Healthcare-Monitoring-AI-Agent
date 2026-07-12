@@ -95,6 +95,7 @@ class QueryRequest(BaseModel):
 	query: str
 	role: str = "user"
 	user_id: str | None = None
+	session_id: str | None = None
 	history: list[dict] | None = None
 
 
@@ -142,24 +143,47 @@ async def ask(req: QueryRequest):
 			except Exception as e:
 				print("❌ Supabase history fetch failed:", e)
 
-		response = agent(req.query, conversation_memory=memory, user_id=req.user_id)
+		# Extract main medical entity keyword
+		detected_keyword = None
+		try:
+			from retrieval.hybrid_retriever import detect_entity, get_data_and_indices
+			_, _, ent_idx, _ = get_data_and_indices()
+			detected_keyword = detect_entity(req.query, ent_idx)
+		except Exception as ex:
+			print("⚠️ Could not detect keyword:", ex)
 
 		if supabase and req.user_id:
+			session_name = detected_keyword or req.query
+			session_name = " ".join(w.capitalize() for w in (session_name or "").split())
+			if len(session_name) > 30:
+				session_name = session_name[:27] + "..."
+
 			try:
 				supabase.table("chat_history").insert({
 					"user_id": req.user_id,
+					"session_id": req.session_id or "00000000-0000-0000-0000-000000000000",
 					"query": req.query,
-					"response": response
+					"response": response,
+					"session_name": session_name
 				}).execute()
-				print("✅ Chat saved to Supabase")
+				print("✅ Chat saved to Supabase (with session_name)")
 			except Exception as e:
-				print("❌ Supabase insert failed:", e)
+				try:
+					supabase.table("chat_history").insert({
+						"user_id": req.user_id,
+						"session_id": req.session_id or "00000000-0000-0000-0000-000000000000",
+						"query": req.query,
+						"response": response
+					}).execute()
+					print("✅ Chat saved to Supabase (without session_name fallback)")
+				except Exception as ex:
+					print("❌ Supabase insert failed:", ex)
 
-		return response
+		return {"response": response, "keyword": detected_keyword}
 
 	try:
 		result = await asyncio.to_thread(run_pipeline)
-		return {"response": result, "role": req.role}
+		return {"response": result.get("response"), "keyword": result.get("keyword"), "role": req.role}
 	except Exception as e:
 		return {"error": str(e)}
 

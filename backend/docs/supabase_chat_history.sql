@@ -175,6 +175,12 @@ with check (user_id = auth.uid());
 -- ALTER TABLE reminders ADD COLUMN IF NOT EXISTS frequency text NOT NULL DEFAULT 'once';
 -- ALTER TABLE reminders ADD COLUMN IF NOT EXISTS last_triggered_at timestamptz;
 
+-- 2. Chat history multi-session partitioning & renaming:
+-- ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS session_id uuid;
+-- UPDATE chat_history SET session_id = '00000000-0000-0000-0000-000000000000' WHERE session_id IS NULL;
+-- ALTER TABLE chat_history ALTER COLUMN session_id SET NOT NULL;
+-- ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS session_name text;
+
 -- =========================================================================
 -- SUPABASE CRON SCHEDULER SETUP (pg_cron & pg_net)
 -- =========================================================================

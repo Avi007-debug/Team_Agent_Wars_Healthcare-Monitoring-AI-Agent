@@ -157,7 +157,7 @@ def structured_response(docs):
 	return response.strip()
 
 
-def answer_query(query, conversation_memory=None):
+def answer_query(query, conversation_memory=None, role="user"):
 
 	augmented_query = _contextualize_query(query, conversation_memory)
 
@@ -168,6 +168,6 @@ def answer_query(query, conversation_memory=None):
 
 	if no_knowledge_check(query, docs):
 		disclaimer = "⚠️ Exact information for your query is not available in our clinical database. Here is the closest matching medical reference information we found:\n\n"
-		return disclaimer + response_agent(docs)
+		return disclaimer + response_agent(docs, role=role)
 
-	return response_agent(docs)
+	return response_agent(docs, role=role)

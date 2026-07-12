@@ -2,7 +2,7 @@ from agent.rag_qa import answer_query
 from agent.tool_agent import tool_agent
 
 
-def medical_agent(query, conversation_memory=None, user_id=None):
+def medical_agent(query, conversation_memory=None, user_id=None, role="user"):
 
 	q = (query or "").lower().strip()
 
@@ -13,4 +13,4 @@ def medical_agent(query, conversation_memory=None, user_id=None):
 	if tool_result:
 		return tool_result
 
-	return answer_query(query, conversation_memory=conversation_memory)
+	return answer_query(query, conversation_memory=conversation_memory, role=role)

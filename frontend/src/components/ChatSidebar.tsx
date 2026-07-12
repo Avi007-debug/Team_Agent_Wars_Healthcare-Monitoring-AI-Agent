@@ -8,12 +8,17 @@ import {
 const PRESETS = [
   { icon: Stethoscope, text: 'symptoms of gestational cholestasis', color: 'text-primary' },
   { icon: Pill, text: 'side effects of oxycodone hydrochloride', color: 'text-secondary' },
-  { icon: Salad, text: 'nutrition in pea curry (matar ki sabzi)', color: 'text-emerald-400' },
+  { icon: Pill, text: 'what is lipitor used for', color: 'text-sky-400' },
+  { icon: Stethoscope, text: 'warnings for fingolimod', color: 'text-rose-400' },
+  { icon: HeartPulse, text: 'treatment for eczema', color: 'text-teal-400' },
   { icon: AlertTriangle, text: 'drug interaction aspirin ibuprofen', color: 'text-amber-400' },
+  { icon: Salad, text: 'nutrition in pea curry', color: 'text-emerald-400' },
+  { icon: AlertTriangle, text: 'what are the side effects of non_existent_medicine', color: 'text-red-400' },
+  { icon: Clock, text: 'remind me to take aspirin at 8am', color: 'text-orange-400' },
+  { icon: Clock, text: 'set alarm for lipitor at 2 30 pm', color: 'text-yellow-400' },
   { icon: HeartPulse, text: 'bp 160', color: 'text-red-400' },
   { icon: Brain, text: 'risk age 55 bp 160', color: 'text-violet-400' },
   { icon: AlertTriangle, text: 'covid-19 prevention guidelines', color: 'text-cyan-400' },
-  { icon: Clock, text: 'remind me to take aspirin at 8am', color: 'text-orange-400' },
   { icon: MessageCircle, text: 'hi', color: 'text-muted-foreground' },
 ];
 
@@ -32,6 +37,13 @@ interface Props {
   onRoleChange: (r: string) => void;
   onPresetClick: (t: string) => void;
   onClear: () => void;
+  onNewChat: () => void;
+  sessions: { id: string; name: string }[];
+  currentSessionId: string;
+  onSelectSession: (id: string) => void;
+  onRenameSession: (id: string, name: string) => void;
+  width: number;
+  onWidthChange: (w: number) => void;
   reminders: Reminder[];
   onDeleteReminder: (id: string) => Promise<void>;
   onAddReminder: (medicine: string, time: string, pref: string, freq: string) => Promise<void>;
@@ -47,6 +59,13 @@ export default function ChatSidebar({
   onRoleChange,
   onPresetClick,
   onClear,
+  onNewChat,
+  sessions,
+  currentSessionId,
+  onSelectSession,
+  onRenameSession,
+  width,
+  onWidthChange,
   reminders,
   onDeleteReminder,
   onAddReminder,
@@ -58,6 +77,8 @@ export default function ChatSidebar({
 }: Props) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
   const [newMed, setNewMed] = useState('');
   const [newHour, setNewHour] = useState('08');
   const [newMinute, setNewMinute] = useState('00');
@@ -147,13 +168,34 @@ export default function ChatSidebar({
     setShowAddForm(true);
   };
 
+  const handleSaveRename = (sId: string) => {
+    if (renameValue.trim()) {
+      onRenameSession(sId, renameValue.trim());
+    }
+    setRenamingId(null);
+  };
+
   return (
     <motion.aside
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ delay: 0.1 }}
-      className="hidden lg:flex w-80 flex-col glass-strong rounded-2xl overflow-hidden border-border/50 shadow-xl"
+      className="hidden lg:flex flex-col glass-strong rounded-2xl overflow-hidden border-border/50 shadow-xl relative"
+      style={{ width: `${width}px` }}
     >
+      {/* New Chat Button */}
+      <div className="p-3 border-b border-border/40 bg-card/15">
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={onNewChat}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/95 text-primary-foreground text-xs font-bold shadow-lg shadow-primary/10 transition-all cursor-pointer"
+        >
+          <Plus size={14} />
+          New Chat Session
+        </motion.button>
+      </div>
+
       {/* Role selector */}
       <div className="p-4 border-b border-border/40 bg-card/20">
         <label className="text-[10px] font-bold uppercase tracking-[2px] text-muted-foreground mb-2 block">
@@ -167,6 +209,87 @@ export default function ChatSidebar({
           <option value="user">👤 Patient / User</option>
           <option value="doctor">🩺 Doctor / Clinician</option>
         </select>
+      </div>
+
+      {/* Doctor Mode Clinician Dashboard */}
+      {role === 'doctor' && (
+        <div className="p-4 border-b border-border/40 bg-emerald-500/5 flex flex-col gap-2">
+          <div className="flex items-center gap-1.5 text-emerald-400">
+            <HeartPulse size={14} className="animate-pulse" />
+            <h4 className="text-[10px] font-bold uppercase tracking-[2px]">Clinician Dashboard</h4>
+          </div>
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            Authorized portal active. Reference clinical monographs, run diagnostics, and check patient alarms.
+          </p>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold uppercase">Rx Allowed</span>
+            <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-bold uppercase">Auditing Mode</span>
+          </div>
+        </div>
+      )}
+
+      {/* Recent Chats / Threads Section */}
+      <div className="p-4 border-b border-border/40 bg-card/10 flex flex-col gap-2.5 max-h-[180px] overflow-y-auto">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <MessageCircle size={14} className="text-secondary" />
+          <h3 className="text-[10px] font-bold uppercase tracking-[2px]">
+            Recent Consultations
+          </h3>
+        </div>
+        
+        {sessions.length === 0 ? (
+          <p className="text-[10px] text-muted-foreground italic px-1 py-1">No active consultations</p>
+        ) : (
+          <div className="flex flex-col gap-1">
+            {sessions.map((s) => (
+              <div
+                key={s.id}
+                className={`group relative flex items-center justify-between rounded-xl border transition-all duration-200 ${
+                  s.id === currentSessionId
+                    ? 'bg-gradient-to-r from-primary/10 to-secondary/5 border-primary/30'
+                    : 'border-transparent hover:bg-muted/40'
+                }`}
+              >
+                {renamingId === s.id ? (
+                  <input
+                    type="text"
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onBlur={() => handleSaveRename(s.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveRename(s.id);
+                      if (e.key === 'Escape') setRenamingId(null);
+                    }}
+                    className="bg-background/80 border border-primary/45 px-2.5 py-1 rounded-lg text-xs w-full focus:outline-none text-foreground m-1 shadow-inner"
+                    autoFocus
+                  />
+                ) : (
+                  <>
+                    <button
+                      onClick={() => onSelectSession(s.id)}
+                      className={`flex-1 text-left px-3 py-2 text-xs truncate cursor-pointer ${
+                        s.id === currentSessionId ? 'text-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                      title={s.name}
+                    >
+                      {s.name}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setRenamingId(s.id);
+                        setRenameValue(s.name);
+                      }}
+                      className="p-1 mr-1.5 text-muted-foreground hover:text-primary rounded hover:bg-primary/10 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
+                      title="Rename Consultation"
+                    >
+                      <Edit2 size={12} />
+                    </button>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Alarms & Reminders Manager */}
@@ -450,6 +573,31 @@ export default function ChatSidebar({
           <Trash2 size={14} />
           Clear Conversation
         </motion.button>
+      </div>
+
+      {/* Resizable Sidebar Drag Handle */}
+      <div
+        onMouseDown={(e) => {
+          e.preventDefault();
+          const startX = e.clientX;
+          const startWidth = width;
+
+          const handleMouseMove = (moveEvent: MouseEvent) => {
+            const newWidth = Math.min(Math.max(startWidth + (moveEvent.clientX - startX), 240), 450);
+            onWidthChange(newWidth);
+          };
+
+          const handleMouseUp = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+          };
+
+          document.addEventListener('mousemove', handleMouseMove);
+          document.addEventListener('mouseup', handleMouseUp);
+        }}
+        className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-primary/50 hover:w-2 active:bg-primary/70 transition-all z-50 flex items-center justify-center group"
+      >
+        <div className="w-0.5 h-12 bg-border/80 group-hover:bg-primary rounded-full transition-colors" />
       </div>
     </motion.aside>
   );

@@ -1,14 +1,18 @@
 from agent.health_insights import generate_insights
 
 
-def _grounded_line(doc):
+def _grounded_line(doc, role="user"):
 	text = " ".join(doc.get("text", "").split())
 	name = doc.get("name", "Unknown")
 	section = doc.get("section", "overview")
-	return f"- {text} ({name} - {section})"
+	ref = f" ({name} - {section})"
+	if role == "doctor":
+		doc_type = doc.get("type", "unknown").upper()
+		ref += f" [Scope: {doc_type}]"
+	return f"- {text}{ref}"
 
 
-def structured_response(docs):
+def structured_response(docs, role="user"):
 
 	symptoms = []
 	treatment = []
@@ -43,61 +47,67 @@ def structured_response(docs):
 		else:
 			others.append(doc)
 
-	response = "🩺 Medical Answer:\n\n"
+	if role == "doctor":
+		response = "🔬 Professional Clinical Digest:\n[CONFIDENTIAL CLINICAL MONOGRAPH AUDIT ACTIVE]\n---\n\n"
+	else:
+		response = "🩺 Medical Answer:\n\n"
 
 	if purpose:
 		response += "Purpose & Indication:\n"
 		for doc in purpose:
-			response += _grounded_line(doc) + "\n"
+			response += _grounded_line(doc, role=role) + "\n"
 		response += "\n"
 
 	if symptoms:
 		response += "Symptoms:\n"
 		for doc in symptoms:
-			response += _grounded_line(doc) + "\n"
+			response += _grounded_line(doc, role=role) + "\n"
 		response += "\n"
 
 	if treatment:
 		response += "Treatment & Management:\n"
 		for doc in treatment:
-			response += _grounded_line(doc) + "\n"
+			response += _grounded_line(doc, role=role) + "\n"
 		response += "\n"
 
 	if side_effects:
 		response += "Side Effects & Adverse Reactions:\n"
 		for doc in side_effects:
-			response += _grounded_line(doc) + "\n"
+			response += _grounded_line(doc, role=role) + "\n"
 		response += "\n"
 
 	if warnings:
 		response += "Warnings & Precautions:\n"
 		for doc in warnings:
-			response += _grounded_line(doc) + "\n"
+			response += _grounded_line(doc, role=role) + "\n"
 		response += "\n"
 
 	if nutrition:
 		response += "Nutrition Information:\n"
 		for doc in nutrition:
-			response += _grounded_line(doc) + "\n"
+			response += _grounded_line(doc, role=role) + "\n"
 		response += "\n"
 
 	if prevention:
 		response += "Prevention Guidelines:\n"
 		for doc in prevention:
-			response += _grounded_line(doc) + "\n"
+			response += _grounded_line(doc, role=role) + "\n"
 		response += "\n"
 
 	if others:
 		response += "Additional Information:\n"
 		for doc in others:
-			response += _grounded_line(doc) + "\n"
+			response += _grounded_line(doc, role=role) + "\n"
 		response += "\n"
+
+	if role == "doctor":
+		response += "📋 Clinical Safety Notice:\n- Cross-reference metrics with institutional guidelines before formulating diagnostics.\n- Report any adverse event patterns directly to FDA MedWatch.\n"
 
 	return response.strip()
 
 
-def response_agent(docs):
+def response_agent(docs, role="user"):
 
 	insights = generate_insights(docs)
 
-	return structured_response(docs) + "\n\n🔍 Insights:\n" + insights
+	return structured_response(docs, role=role) + "\n\n🔍 Insights:\n" + insights

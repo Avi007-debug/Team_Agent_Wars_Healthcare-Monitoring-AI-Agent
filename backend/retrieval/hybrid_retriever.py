@@ -155,11 +155,12 @@ def detect_entity(query, entity_idx):
 		"symptom", "symptoms", "disease", "treatment", "drug", "drugs",
 		"interaction", "interactions", "warning", "warnings", "purpose",
 		"nutrition", "food", "diet", "guideline", "guidelines", "prevention",
-		"side", "effects", "effect", "risk", "for", "and", "the", "with", "about", "unknown"
+		"side", "effects", "effect", "risk", "for", "and", "the", "with", "about", "unknown",
+		"medicine", "medicines", "what", "are", "of", "give", "show", "list", "non", "existent"
 	}
 	query_entity_terms = {w for w in q_terms if w not in generic_terms}
 	if not query_entity_terms:
-		query_entity_terms = q_terms
+		return None
 
 	best_name = None
 	best_overlap = 0

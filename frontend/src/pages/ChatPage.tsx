@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Mic, Loader2, Sparkles, Bell, BellRing, Settings, Info, Volume2, AlertCircle, Clock, Edit2 } from 'lucide-react';
 import ChatMessage from '../components/ChatMessage';
@@ -12,11 +12,20 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 const SUGGESTIONS = [
   'symptoms of gestational cholestasis',
   'side effects of oxycodone hydrochloride',
-  'nutrition in pea curry (matar ki sabzi)',
+  'what is lipitor used for',
+  'warnings for fingolimod',
+  'treatment for eczema',
   'drug interaction aspirin ibuprofen',
-  'bp 160',
+  'nutrition in pea curry',
+  'what are the side effects of non_existent_medicine',
   'remind me to take aspirin at 8am',
+  'set alarm for lipitor at 2 30 pm',
+  'bp 160',
+  'risk age 55 bp 160',
+  'covid-19 prevention guidelines',
+  'hi'
 ];
+
 
 interface Msg {
   user: string;
@@ -103,11 +112,56 @@ export default function ChatPage() {
   const { user, profile, authError } = useAuth();
   const [query, setQuery] = useState('');
   const [messages, setMessages] = useState<Msg[]>([]);
+  const [sessionId, setSessionId] = useState<string>('');
+  const [allMessages, setAllMessages] = useState<any[]>([]);
+  const [customNames, setCustomNames] = useState<{ [key: string]: string }>(() => {
+    const saved = localStorage.getItem('chat_session_names');
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem('sidebar_width');
+    return saved ? parseInt(saved, 10) : 320;
+  });
   const [role, setRole] = useState('user');
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [chatError, setChatError] = useState('');
   const [toastMessage, setToastMessage] = useState('');
+
+  // Group chats by session_id to show in the sidebar
+  const chatSessions = useMemo(() => {
+    const map: { [key: string]: { id: string; name: string; time: number } } = {};
+    allMessages.forEach((m) => {
+      const sId = m.sessionId || '00000000-0000-0000-0000-000000000000';
+      if (!map[sId]) {
+        const isNewLoading = !m.bot;
+        const baseName = m.sessionName || m.user.substring(0, 24) + (m.user.length > 24 ? '...' : '');
+        map[sId] = {
+          id: sId,
+          name: customNames[sId] || (isNewLoading ? "New Chat..." : baseName),
+          time: new Date(m.createdAt || 0).getTime()
+        };
+      }
+    });
+    return Object.values(map).sort((a, b) => b.time - a.time);
+  }, [allMessages, customNames]);
+
+  // Load or generate session ID
+  useEffect(() => {
+    let activeSession = localStorage.getItem('chat_session_id');
+    if (!activeSession) {
+      activeSession = self.crypto.randomUUID();
+      localStorage.setItem('chat_session_id', activeSession);
+    }
+    setSessionId(activeSession);
+  }, []);
+
+  // Sync displayed messages to the active session ID
+  useEffect(() => {
+    if (!sessionId) return;
+    const filtered = allMessages.filter(m => m.sessionId === sessionId);
+    setMessages(filtered);
+  }, [sessionId, allMessages]);
   
   // Reminders / Alarm states
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -200,11 +254,12 @@ export default function ChatPage() {
       }
 
       const rows = (data as ChatHistoryRow[] | null) ?? [];
-      setMessages(rows.map((row) => ({
+      setAllMessages(rows.map((row: any) => ({
         user: row.query,
         bot: row.response,
         role: 'user',
         createdAt: row.created_at ?? '',
+        sessionId: row.session_id || '00000000-0000-0000-0000-000000000000'
       })));
     } catch (err: any) {
       console.error("Exception loading history:", err);
@@ -314,15 +369,16 @@ export default function ChatPage() {
     setQuery('');
 
     // Pre-append user message to chat UI immediately
-    const tempUserMessage: Msg = {
+    const tempUserMessage: any = {
       user: q,
       bot: '',
       role,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      sessionId: sessionId || '00000000-0000-0000-0000-000000000000'
     };
     
     // We update local state first
-    setMessages((prev) => [...prev, tempUserMessage]);
+    setAllMessages((prev) => [...prev, tempUserMessage]);
 
     try {
       // Build context history payload (last 12 turns) to send to backend
@@ -338,6 +394,7 @@ export default function ChatPage() {
           query: q, 
           role, 
           user_id: user?.id,
+          session_id: sessionId || '00000000-0000-0000-0000-000000000000',
           history: historyPayload
         }),
       });
@@ -353,10 +410,10 @@ export default function ChatPage() {
       }
 
       // Update the last message in state with the bot response
-      setMessages((prev) => {
+      setAllMessages((prev) => {
         const copy = [...prev];
         const lastMsg = copy[copy.length - 1];
-        if (lastMsg && lastMsg.user === q) {
+        if (lastMsg && lastMsg.user === q && lastMsg.sessionId === sessionId) {
           lastMsg.bot = rawResponse;
         }
         return copy;
@@ -381,10 +438,10 @@ export default function ChatPage() {
       setChatError(bannerMessage);
       setToastMessage(bannerMessage);
       
-      setMessages((prev) => {
+      setAllMessages((prev) => {
         const copy = [...prev];
         const lastMsg = copy[copy.length - 1];
-        if (lastMsg && lastMsg.user === q) {
+        if (lastMsg && lastMsg.user === q && lastMsg.sessionId === sessionId) {
           lastMsg.bot = botMessage;
         }
         return copy;
@@ -394,7 +451,7 @@ export default function ChatPage() {
       setLoading(false);
       inputRef.current?.focus();
     }
-  }, [query, role, messages, user, loadReminders]);
+  }, [query, role, messages, user, loadReminders, sessionId, allMessages]);
 
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -406,8 +463,12 @@ export default function ChatPage() {
   };
 
   const clearChat = useCallback(async () => {
-    setMessages([]);
+    setAllMessages([]);
     setChatError('');
+    localStorage.removeItem('chat_session_id');
+    const newId = self.crypto.randomUUID();
+    localStorage.setItem('chat_session_id', newId);
+    setSessionId(newId);
 
     const { error } = await supabase
       .from('chat_history')
@@ -419,6 +480,14 @@ export default function ChatPage() {
       setChatError(msg);
       setToastMessage(msg);
     }
+  }, []);
+
+  const startNewChat = useCallback(() => {
+    const newId = self.crypto.randomUUID();
+    localStorage.setItem('chat_session_id', newId);
+    setSessionId(newId);
+    setChatError('');
+    setToastMessage('✨ Started a new chat session.');
   }, []);
 
   // Delete/dismiss medication reminder
@@ -511,6 +580,11 @@ export default function ChatPage() {
     setToastMessage('⏰ Snoozed medication reminder for 5 minutes.');
   };
 
+  const handleSelectSession = (sId: string) => {
+    setSessionId(sId);
+    localStorage.setItem('chat_session_id', sId);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -523,6 +597,10 @@ export default function ChatPage() {
         onRoleChange={setRole}
         onPresetClick={(t) => sendQuery(t)}
         onClear={clearChat}
+        onNewChat={startNewChat}
+        sessions={chatSessions}
+        currentSessionId={sessionId}
+        onSelectSession={handleSelectSession}
         reminders={reminders}
         onDeleteReminder={deleteReminder}
         onAddReminder={addReminder}

@@ -163,7 +163,11 @@ def answer_query(query, conversation_memory=None):
 
 	docs = retrieval_agent(augmented_query)
 
-	if not docs or no_knowledge_check(query, docs):
-		return "No relevant medical information found."
+	if not docs:
+		return "⚠️ Exact information is not available in our clinical database, and no matching reference documents could be found."
+
+	if no_knowledge_check(query, docs):
+		disclaimer = "⚠️ Exact information for your query is not available in our clinical database. Here is the closest matching medical reference information we found:\n\n"
+		return disclaimer + response_agent(docs)
 
 	return response_agent(docs)

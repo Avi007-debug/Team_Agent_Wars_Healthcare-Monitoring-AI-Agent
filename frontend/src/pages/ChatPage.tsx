@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Mic, Loader2, Sparkles, Bell, BellRing, Settings, Info, Volume2, AlertCircle } from 'lucide-react';
+import { Send, Mic, Loader2, Sparkles, Bell, BellRing, Settings, Info, Volume2, AlertCircle, Clock, Edit2 } from 'lucide-react';
 import ChatMessage from '../components/ChatMessage';
 import ChatSidebar, { Reminder } from '../components/ChatSidebar';
 import TypingIndicator from '../components/TypingIndicator';
@@ -72,8 +72,8 @@ function parseReminderTimeToMinutes(timeStr: string): number | null {
     }
   }
 
-  // 12hr AM/PM match (e.g. 8am, 9:30pm, 12:00 am)
-  const ampmMatch = clean.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/);
+  // 12hr AM/PM match (e.g. 8am, 9:30pm, 12:00 am, or 1 05 pm)
+  const ampmMatch = clean.match(/^(\d{1,2})(?::| )?(\d{2})?\s*(am|pm)$/);
   if (ampmMatch) {
     let hrs = parseInt(ampmMatch[1], 10);
     const mins = ampmMatch[2] ? parseInt(ampmMatch[2], 10) : 0;
@@ -261,21 +261,37 @@ export default function ChatPage() {
           if (lastTriggeredReminderRef.current !== runKey) {
             lastTriggeredReminderRef.current = runKey;
             
-            // Trigger Alarm Modal & Chime Sound
-            setActiveAlarm(r);
-            playChime();
+            const prefStr = r.notification_pref || 'in_app';
+
+            // 1. Trigger In-App Alarm Modal & Chime Sound
+            if (prefStr.includes('in_app')) {
+              setActiveAlarm(r);
+              playChime();
+            }
             
-            // Deliver Browser Push Alert
-            if (Notification.permission === 'granted' && (r.notification_pref === 'browser' || r.notification_pref === 'in_app')) {
+            // 2. Deliver Browser Push Alert
+            if (Notification.permission === 'granted' && prefStr.includes('browser')) {
               new Notification("🏥 Medication Alarm!", {
                 body: `Time to take ${r.medicine}! Scheduled at ${r.reminder_time}.`,
                 icon: "/medical-logo.png"
               });
+              
+              if (!prefStr.includes('in_app')) {
+                setToastMessage(`🔔 Push Notification triggered for ${r.medicine}`);
+              }
             }
             
-            // Simulate Email alert via API
-            if (r.notification_pref === 'email') {
+            // 3. Simulate Email alert via API
+            if (prefStr.includes('email')) {
               setToastMessage(`📧 Medication email alert dispatched to ${user.email}`);
+            }
+
+            // If the reminder is not in-app, update last_triggered_at immediately so it doesn't double fire in this minute
+            if (!prefStr.includes('in_app')) {
+              supabase.from('reminders')
+                .update({ last_triggered_at: new Date().toISOString() })
+                .eq('id', r.id)
+                .then(() => loadReminders(user));
             }
           }
         }
@@ -443,13 +459,36 @@ export default function ChatPage() {
     }
   };
 
+  // Update/Edit medication reminder
+  const updateReminder = async (id: string, medicine: string, time: string, pref: string, freq: string) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('reminders')
+      .update({
+        medicine,
+        reminder_time: time,
+        notification_pref: pref,
+        frequency: freq,
+        status: 'active'
+      })
+      .eq('id', id);
+
+    if (error) {
+      setToastMessage(`Error updating reminder: ${error.message}`);
+      throw error;
+    } else {
+      setToastMessage('⏰ Medication reminder updated successfully!');
+      loadReminders(user);
+    }
+  };
+
   // Alarm modal dismissal
   const dismissAlarm = async () => {
     if (!activeAlarm) return;
     
     // For once-off, mark status as completed. For recurring, just update last_triggered_at.
     const updates: any = { last_triggered_at: new Date().toISOString() };
-    if (activeAlarm.frequency === 'once') {
+    if ((activeAlarm.frequency || 'once') === 'once') {
       updates.status = 'completed';
     }
 
@@ -487,6 +526,7 @@ export default function ChatPage() {
         reminders={reminders}
         onDeleteReminder={deleteReminder}
         onAddReminder={addReminder}
+        onUpdateReminder={updateReminder}
         notificationPref={notificationPref}
         onNotificationPrefChange={setNotificationPref}
         browserPermission={browserPermission}

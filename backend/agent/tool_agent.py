@@ -116,6 +116,10 @@ def tool_agent(query, user_id=None):
 			return check_drug_interaction(drug1, drug2)
 		return "Please specify two drugs. Example: drug interaction aspirin ibuprofen."
 
+	if any(k in q for k in ["show alarms", "list reminders", "my reminders", "view reminders", "medication clock"]):
+		from tools.reminder_tool import list_reminders
+		return list_reminders(user_id=user_id)
+
 	if "remind" in q:
 		medicine, time, freq = _extract_reminder_request(q)
 		if not medicine or not time:

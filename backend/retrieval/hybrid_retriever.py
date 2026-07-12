@@ -155,7 +155,7 @@ def detect_entity(query, entity_idx):
 		"symptom", "symptoms", "disease", "treatment", "drug", "drugs",
 		"interaction", "interactions", "warning", "warnings", "purpose",
 		"nutrition", "food", "diet", "guideline", "guidelines", "prevention",
-		"side", "effects", "effect", "risk", "for", "and", "the", "with", "about"
+		"side", "effects", "effect", "risk", "for", "and", "the", "with", "about", "unknown"
 	}
 	query_entity_terms = {w for w in q_terms if w not in generic_terms}
 	if not query_entity_terms:
@@ -186,37 +186,43 @@ def detect_entity(query, entity_idx):
 
 
 # ------------------- NEW FEATURE -------------------
-# No Knowledge Detection
+# Query Normalization & No Knowledge Detection
 # ---------------------------------------------------
+
+def normalize_medical_query(query):
+	q = (query or "").lower().strip()
+	
+	# Normalize common typos
+	q = re.sub(r"\bliptior\b", "lipitor", q)
+	
+	# Normalize side-effects / sideeffects / effects variations
+	q = re.sub(r"\bsideeffects\b", "side effects", q)
+	q = re.sub(r"\bside-effects\b", "side effects", q)
+	
+	# If they ask 'effects of X' or 'what are the effects of X', map to 'side effects of X'
+	if "effects of" in q and "side effects" not in q:
+		q = q.replace("effects of", "side effects of")
+		
+	# Normalize other medical term combinations
+	q = re.sub(r"\bbloodpressure\b", "blood pressure", q)
+	q = re.sub(r"\bheartrate\b", "heart rate", q)
+	q = re.sub(r"\bdruginteraction\b", "drug interaction", q)
+	q = re.sub(r"\bmatarkisabzi\b", "matar ki sabzi", q)
+	
+	return q
+
 
 def no_knowledge_check(query, docs):
-
-	query_words = set(tokenize(query))
-	generic_words = {
-		"symptom", "symptoms", "disease", "treatment", "drug", "drugs",
-		"interaction", "interactions", "warning", "warnings", "purpose",
-		"nutrition", "food", "diet", "guideline", "guidelines", "prevention",
-		"unknown"
-	}
-	informative_words = {w for w in query_words if w not in generic_words}
-	if not informative_words:
-		informative_words = query_words
-
-	match_count = 0
-
-	for doc in docs:
-
-		text = doc["text"].lower()
-		name = doc.get("name", "").lower()
-		section = doc.get("section", "").lower().replace("_", " ")
-		doc_tokens = set(tokenize(f"{name} {section} {text}"))
-		overlap = informative_words.intersection(doc_tokens)
-
-		if len(overlap) >= 1:
-			match_count += 1
-
-	return match_count == 0
-# ---------------------------------------------------
+	normalized_query = normalize_medical_query(query)
+	
+	# Check if the query mentions any known entity in our database index
+	idx, dat, ent_idx, b25 = get_data_and_indices()
+	entity = detect_entity(normalized_query, ent_idx)
+	
+	if not entity:
+		return True
+		
+	return False
 
 
 # ---------------------------------------------------
@@ -224,7 +230,8 @@ def no_knowledge_check(query, docs):
 # ---------------------------------------------------
 
 def retrieve(query, k=5):
-	print("[LOG] Query:", query)
+	query = normalize_medical_query(query)
+	print("[LOG] Query (Normalized):", query)
 	start = time.time()
 
 	# Lazy load

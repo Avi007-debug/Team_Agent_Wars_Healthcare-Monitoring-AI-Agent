@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Stethoscope, Pill, HeartPulse, Brain, Salad, AlertTriangle, 
-  Clock, MessageCircle, Trash2, Bell, Info, Plus, X 
+  Clock, MessageCircle, Trash2, Bell, Info, Plus, X, Edit2 
 } from 'lucide-react';
 
 const PRESETS = [
@@ -23,6 +23,8 @@ export interface Reminder {
   reminder_time: string;
   status: string;
   notification_pref: string;
+  frequency?: string;
+  last_triggered_at?: string | null;
 }
 
 interface Props {
@@ -33,6 +35,7 @@ interface Props {
   reminders: Reminder[];
   onDeleteReminder: (id: string) => Promise<void>;
   onAddReminder: (medicine: string, time: string, pref: string, freq: string) => Promise<void>;
+  onUpdateReminder: (id: string, medicine: string, time: string, pref: string, freq: string) => Promise<void>;
   notificationPref: string;
   onNotificationPrefChange: (pref: string) => void;
   browserPermission: string;
@@ -47,34 +50,101 @@ export default function ChatSidebar({
   reminders,
   onDeleteReminder,
   onAddReminder,
+  onUpdateReminder,
   notificationPref,
   onNotificationPrefChange,
   browserPermission,
   onRequestBrowserPermission
 }: Props) {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [newMed, setNewMed] = useState('');
-  const [newTime, setNewTime] = useState('');
-  const [newPref, setNewPref] = useState('in_app');
+  const [newHour, setNewHour] = useState('08');
+  const [newMinute, setNewMinute] = useState('00');
+  const [newAmpm, setNewAmpm] = useState('AM');
+  const [prefInApp, setPrefInApp] = useState(true);
+  const [prefBrowser, setPrefBrowser] = useState(false);
+  const [prefEmail, setPrefEmail] = useState(false);
   const [newFreq, setNewFreq] = useState('once');
   const [submitting, setSubmitting] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMed.trim() || !newTime.trim()) return;
+    if (!newMed.trim()) return;
+
+    const selectedPrefs = [];
+    if (prefInApp) selectedPrefs.push('in_app');
+    if (prefBrowser) selectedPrefs.push('browser');
+    if (prefEmail) selectedPrefs.push('email');
+
+    if (selectedPrefs.length === 0) {
+      alert('Please select at least one notification option.');
+      return;
+    }
+
+    const hrVal = parseInt(newHour, 10);
+    const minVal = parseInt(newMinute, 10);
+
+    if (isNaN(hrVal) || hrVal < 1 || hrVal > 12) {
+      alert('Please enter a valid hour between 01 and 12.');
+      return;
+    }
+    if (isNaN(minVal) || minVal < 0 || minVal > 59) {
+      alert('Please enter a valid minute between 00 and 59.');
+      return;
+    }
+
+    const timeString = `${String(hrVal).padStart(2, '0')}:${String(minVal).padStart(2, '0')} ${newAmpm}`;
+    const prefString = selectedPrefs.join(',');
+
     setSubmitting(true);
     try {
-      await onAddReminder(newMed.trim(), newTime.trim(), newPref, newFreq);
+      if (editingId) {
+        await onUpdateReminder(editingId, newMed.trim(), timeString, prefString, newFreq);
+      } else {
+        await onAddReminder(newMed.trim(), timeString, prefString, newFreq);
+      }
       setNewMed('');
-      setNewTime('');
+      setNewHour('08');
+      setNewMinute('00');
+      setNewAmpm('AM');
       setNewFreq('once');
+      setPrefInApp(true);
+      setPrefBrowser(false);
+      setPrefEmail(false);
+      setEditingId(null);
       setShowAddForm(false);
     } catch (err) {
       console.error(err);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleStartEdit = (r: Reminder) => {
+    setEditingId(r.id);
+    setNewMed(r.medicine);
+    setNewFreq(r.frequency || 'once');
+    
+    const prefStr = r.notification_pref || 'in_app';
+    setPrefInApp(prefStr.includes('in_app'));
+    setPrefBrowser(prefStr.includes('browser'));
+    setPrefEmail(prefStr.includes('email'));
+    
+    // Parse time formats flexibly (e.g., "01:05 PM", "1 05 pm", "8am", "20:00")
+    const clean = r.reminder_time.toLowerCase().trim();
+    const period = clean.includes('pm') ? 'PM' : 'AM';
+    
+    const digits = clean.match(/\d+/g);
+    if (digits && digits.length >= 1) {
+      const hr = digits[0].padStart(2, '0');
+      const min = digits.length >= 2 ? digits[1].padStart(2, '0') : '00';
+      setNewHour(hr);
+      setNewMinute(min);
+      setNewAmpm(period);
+    }
+    setShowAddForm(true);
   };
 
   return (
@@ -153,7 +223,7 @@ export default function ChatSidebar({
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               onSubmit={handleSubmit}
-              className="flex flex-col gap-2 bg-muted/20 border border-border/60 p-3 rounded-xl overflow-hidden"
+              className="flex flex-col gap-2.5 bg-muted/20 border border-border/60 p-3 rounded-xl overflow-hidden text-xs"
             >
               <input
                 type="text"
@@ -163,46 +233,123 @@ export default function ChatSidebar({
                 onChange={(e) => setNewMed(e.target.value)}
                 className="w-full px-2.5 py-1.5 rounded-lg bg-background/50 border border-border text-xs focus:outline-none focus:border-primary text-foreground"
               />
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  required
-                  placeholder="Time (e.g., 8:00 AM, 20:00)"
-                  value={newTime}
-                  onChange={(e) => setNewTime(e.target.value)}
-                  className="flex-1 px-2.5 py-1.5 rounded-lg bg-background/50 border border-border text-xs focus:outline-none focus:border-primary text-foreground"
-                />
+
+              {/* Time Selector */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Scheduled Time</label>
+                <div className="flex gap-1.5 items-center">
+                  <input
+                    type="text"
+                    required
+                    placeholder="HH"
+                    maxLength={2}
+                    value={newHour}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      setNewHour(val);
+                    }}
+                    className="w-12 px-2 py-1 text-center rounded bg-background/50 border border-border text-foreground focus:outline-none focus:border-primary text-xs font-semibold"
+                  />
+                  <span className="text-muted-foreground font-bold">:</span>
+                  <input
+                    type="text"
+                    required
+                    placeholder="MM"
+                    maxLength={2}
+                    value={newMinute}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      setNewMinute(val);
+                    }}
+                    className="w-12 px-2 py-1 text-center rounded bg-background/50 border border-border text-foreground focus:outline-none focus:border-primary text-xs font-semibold"
+                  />
+                  <select
+                    value={newAmpm}
+                    onChange={(e) => setNewAmpm(e.target.value)}
+                    className="px-1.5 py-1 rounded bg-background/50 border border-border text-foreground focus:outline-none text-xs cursor-pointer"
+                  >
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
               </div>
-              <div className="flex gap-2">
+
+              {/* Frequency Selector */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Schedule Pattern</label>
                 <select
                   value={newFreq}
                   onChange={(e) => setNewFreq(e.target.value)}
-                  className="flex-1 px-2 py-1.5 rounded-lg bg-background/50 border border-border text-xs focus:outline-none focus:border-primary text-foreground cursor-pointer"
-                  title="Frequency schedule"
+                  className="w-full px-2.5 py-1 rounded bg-background/50 border border-border text-foreground focus:outline-none text-xs cursor-pointer"
                 >
                   <option value="once">⏰ Once</option>
                   <option value="daily">🔄 Daily</option>
                   <option value="weekly">📅 Weekly</option>
-                  <option value="every_8_hours">🕒 Every 8h</option>
-                </select>
-                <select
-                  value={newPref}
-                  onChange={(e) => setNewPref(e.target.value)}
-                  className="flex-1 px-2 py-1.5 rounded-lg bg-background/50 border border-border text-xs focus:outline-none focus:border-primary text-foreground cursor-pointer"
-                  title="Notification Channel"
-                >
-                  <option value="in_app">💻 In-App</option>
-                  <option value="browser">🔔 Push</option>
-                  <option value="email">📧 Email</option>
+                  <option value="every_8_hours">🕒 Every 8 Hours</option>
                 </select>
               </div>
+
+              {/* Multi-select Notification Checkboxes */}
+              <div className="flex flex-col gap-1.5 border-t border-border/40 pt-2">
+                <label className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Notification Channels</label>
+                <div className="flex flex-col gap-1 px-1">
+                  <label className="flex items-center gap-2 cursor-pointer select-none text-foreground hover:text-primary transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={prefInApp}
+                      onChange={(e) => setPrefInApp(e.target.checked)}
+                      className="rounded border-border text-primary focus:ring-primary h-3 w-3 cursor-pointer"
+                    />
+                    <span>💻 In-App Alert</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer select-none text-foreground hover:text-primary transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={prefBrowser}
+                      onChange={(e) => setPrefBrowser(e.target.checked)}
+                      className="rounded border-border text-primary focus:ring-primary h-3 w-3 cursor-pointer"
+                    />
+                    <span>🔔 Browser Push</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer select-none text-foreground hover:text-primary transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={prefEmail}
+                      onChange={(e) => setPrefEmail(e.target.checked)}
+                      className="rounded border-border text-primary focus:ring-primary h-3 w-3 cursor-pointer"
+                    />
+                    <span>📧 Email Alert</span>
+                  </label>
+                </div>
+              </div>
+
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-1.5 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1 shadow-md shadow-primary/10"
+                className="w-full py-1.5 mt-1 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1 shadow-md shadow-primary/10"
               >
-                Set Reminder
+                {editingId ? '💾 Save Changes' : 'Set Reminder'}
               </button>
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingId(null);
+                    setNewMed('');
+                    setNewHour('08');
+                    setNewMinute('00');
+                    setNewAmpm('AM');
+                    setNewFreq('once');
+                    setPrefInApp(true);
+                    setPrefBrowser(false);
+                    setPrefEmail(false);
+                    setShowAddForm(false);
+                  }}
+                  className="w-full py-1.5 border border-border/80 text-foreground hover:bg-muted text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1"
+                >
+                  Cancel Edit
+                </button>
+              )}
             </motion.form>
           )}
         </AnimatePresence>
@@ -224,21 +371,36 @@ export default function ChatSidebar({
                   <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5 flex-wrap">
                     <Clock size={10} className="text-primary/70" />
                     {r.reminder_time}
-                    <span className="opacity-80 px-1 py-0.25 rounded bg-primary/10 text-primary text-[8px]">
-                      {r.notification_pref === 'in_app' ? 'In-App' : r.notification_pref === 'browser' ? 'Push' : 'Email'}
-                    </span>
+                    {(r.notification_pref || 'in_app').split(',').map((pref) => (
+                      <span key={pref} className={`opacity-80 px-1 py-0.25 rounded text-[8px] ${
+                        pref === 'in_app' ? 'bg-primary/10 text-primary' : 
+                        pref === 'browser' ? 'bg-secondary/10 text-secondary' : 
+                        'bg-emerald-400/10 text-emerald-400'
+                      }`}>
+                        {pref === 'in_app' ? 'In-App' : pref === 'browser' ? 'Push' : 'Email'}
+                      </span>
+                    ))}
                     <span className="opacity-80 px-1 py-0.25 rounded bg-secondary/10 text-secondary text-[8px]">
                       {r.frequency === 'once' ? 'Once' : r.frequency === 'daily' ? 'Daily' : r.frequency === 'weekly' ? 'Weekly' : 'Every 8h'}
                     </span>
                   </span>
                 </div>
-                <button
-                  onClick={() => onDeleteReminder(r.id)}
-                  className="p-1 text-muted-foreground hover:text-danger hover:bg-danger/10 rounded transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
-                  title="Delete Reminder"
-                >
-                  <Trash2 size={12} />
-                </button>
+                <div className="flex gap-1.5 flex-shrink-0">
+                  <button
+                    onClick={() => handleStartEdit(r)}
+                    className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    title="Edit Alarm"
+                  >
+                    <Edit2 size={12} />
+                  </button>
+                  <button
+                    onClick={() => onDeleteReminder(r.id)}
+                    className="p-1 text-muted-foreground hover:text-danger hover:bg-danger/10 rounded transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    title="Delete Reminder"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
               </div>
             ))
           )}

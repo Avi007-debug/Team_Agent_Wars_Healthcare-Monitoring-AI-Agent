@@ -41,10 +41,10 @@ self.addEventListener('fetch', (event) => {
     requestUrl.pathname.startsWith('/history') || 
     event.request.url.includes('supabase.co')
   ) {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        // Return offline assistant response
-        if (requestUrl.pathname.includes('/ask')) {
+    if (requestUrl.pathname.includes('/ask')) {
+      event.respondWith(
+        fetch(event.request).catch(() => {
+          // Return offline assistant response
           return new Response(
             JSON.stringify({
               response: "⚠️ You are currently offline. Clinical retrieval (RAG) is paused, but your active medication alarms and reminders continue running in the background! Please reconnect to resume consultation.",
@@ -52,9 +52,9 @@ self.addEventListener('fetch', (event) => {
             }),
             { headers: { 'Content-Type': 'application/json' } }
           );
-        }
-      })
-    );
+        })
+      );
+    }
     return;
   }
 
